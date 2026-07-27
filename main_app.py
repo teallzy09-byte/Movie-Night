@@ -6,8 +6,7 @@ import requests
 # ----------------------------------------------------
 # 1. INITIAL API CONFIG & THEME TUNING
 # ----------------------------------------------------
-# Replace 'YOUR_FREE_OMDB_KEY' with your personal 8-digit key from omdbapi.com
-OMDB_API_KEY = "YOUR_FREE_OMDB_KEY" 
+OMDB_API_KEY = "43ac7081" 
 
 st.set_page_config(page_title="Movie Night", layout="wide", initial_sidebar_state="collapsed")
 
