@@ -13,7 +13,7 @@ def hash_password(password):
 def load_table(sheet_name, fallback_cols):
     """Loads a specific worksheet tab safely, cleaning up data formats."""
     try:
-        df = conn.read(worksheet=sheet_name, ttl=0)
+        df = conn.read(worksheet=sheet_name, ttl=2)
         if not df.empty:
             for col in df.columns:
                 df[col] = df[col].astype(str).str.strip()
