@@ -24,23 +24,6 @@ st.markdown("""
     .movie-poster { width: 100%; border-radius: 8px; object-fit: cover; aspect-ratio: 2/3; margin-bottom: 12px; }
     .movie-title { font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 4px; min-height: 55px; }
     .movie-meta { font-size: 0.85rem; color: #718096; margin-bottom: 12px; }
-    .review-box { background-color: #f7fafc; padding: 8px; border-radius: 6px; border-left: 3px solid #3182ce; font-size: 0.85rem; margin-top: 6px; margin-bottom: 6px;}
-    div[data-baseweb="select"] {
-        cursor: pointer !important;
-        user-select: none !important;
-    }
-    
-    /* Lock the text input tag from showing editing behaviors or text-carets */
-    div[data-baseweb="select"] input {
-        cursor: pointer !important;
-        pointer-events: none !important; /* Block the text editor engine completely */
-        caret-color: transparent !important; /* Hide typing blinking indicators */
-    }
-    
-    /* Ensure all structural sub-elements inherit the hand cursor icon */
-    div[data-baseweb="select"] * {
-        cursor: pointer !important;
-    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -58,19 +41,15 @@ if not st.session_state.logged_in:
 current_user = st.session_state.username
 
 # --- MAIN SCREEN HEADER NAVIGATION ASSEMBLY ---
-col_hdr, col_prof, col_btn = st.columns([5, 3, 2])
+col_hdr, col_prof, col_btn = st.columns([4, 3, 3])
 with col_hdr:
     st.markdown("## 🎞️ Shared Movie Board")
 with col_prof:
     st.markdown(f"👋 Active Session: **{current_user}**")
-    with col_prof:
-        st.markdown(f"👋 Active Session: **{current_user}**")
-    
     if st.button("🚪 Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.rerun()
-
 with col_btn:
     if st.button("➕ Add New Movie", use_container_width=True, type="primary"):
         add_item_dialog()
