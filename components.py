@@ -233,7 +233,7 @@ def render_movie_grid(display_movies, current_user):
                             border-radius: 8px;
                         }}
                     </style>
-                "", unsafe_allow_html=True)
+                """, unsafe_allow_html=True)
                 
                 with st.container(border=True):
                     # Styled metadata header block
