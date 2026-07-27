@@ -76,8 +76,7 @@ def render_movie_grid(display_movies, current_user):
                 new_status = st.selectbox("Group Movie Status", status_options, index=s_idx, key=f"status_{m_id}")
                 
                 if new_status != row["Status"]:
-                    target_idx = movie_db[movie_db["MovieID"] == m_id].index
-                    movie_db.at[target_idx, "Status"] = new_status
+                    movie_db.loc[movie_db["MovieID"] == m_id, "Status"] = new_status
                     save_table("Movies", movie_db)
                     st.rerun()
                 
@@ -87,8 +86,10 @@ def render_movie_grid(display_movies, current_user):
                     st.caption("✍️ Your Review:")
                     
                     user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
-                    current_rating = user_rev["Rating"].values[0] if not user_rev.empty else "⭐⭐⭐"
-                    current_comment = user_rev["Comment"].values[0] if not user_rev.empty else ""
+                    current_rating = str(user_rev["Rating"].values[0]) if not user_rev.empty else "⭐⭐⭐"
+                    current_comment = str(user_rev["Comment"].values[0]) if not user_rev.empty else ""
+                    if current_comment == "nan":
+                        current_comment = ""
                     
                     rating_options = ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]
                     r_idx = rating_options.index(current_rating) if current_rating in rating_options else 2
