@@ -46,12 +46,12 @@ def add_item_dialog():
             st.error(f"Search API Error: {e}")
 
 @st.dialog("🎬 Movie Details & Settings", width="large")
-def movie_details_dialog(m_id, current_user, row_title):
-    """Centered pop-up overlay modal rendering metadata and status settings."""
+def movie_details_dialog(m_id):
+    """Centered large pop-up overlay modal rendering metadata and status settings."""
     movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status"])
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
     
-    # Locate targets inside current data matrices
+    # Locate targets inside current data matrices safely
     m_row = movie_db[movie_db["MovieID"] == m_id].iloc[0]
     global_status = m_row["Status"] if m_row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
     
@@ -94,7 +94,7 @@ def movie_details_dialog(m_id, current_user, row_title):
             movie_db.loc[movie_db["MovieID"] == m_id, "Status"] = new_status
             save_table("Movies", movie_db)
             
-            # Clean orphans if changed back to Plan to Watch
+            # Clean review orphans if changed back to Plan to Watch
             if new_status == "Plan to Watch":
                 review_db = review_db[review_db["MovieID"] != m_id]
                 save_table("Reviews", review_db)
@@ -109,10 +109,9 @@ def edit_review_dialog(m_id, current_user, movie_title):
     user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
     
     if not user_rev.empty:
-        raw_rating = user_rev["Rating"].iloc[0]
-        raw_comment = user_rev["Comment"].iloc[0]
-        current_rating = str(raw_rating) if pd.notna(raw_rating) else "7/10"
-        current_comment = str(raw_comment) if pd.notna(raw_comment) else ""
+        # Extract scalar safely to prevent array indexing issues
+        current_rating = str(user_rev["Rating"].values[0])
+        current_comment = str(user_rev["Comment"].values[0])
     else:
         current_rating = "7/10"
         current_comment = ""
@@ -141,21 +140,9 @@ def edit_review_dialog(m_id, current_user, movie_title):
         st.rerun()
 
 def render_movie_grid(display_movies, current_user):
-    """Generates the 4-column movie grid with poster trigger modals and standalone review buttons."""
+    """Generates the 4-column movie grid with stable posters, text info clicks, and reviews."""
     movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status"])
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
-    
-    # Standard CSS Injector to hide the text layer inside the poster-button wrapper container
-    st.markdown("""
-    <style>
-        div.stButton > button.poster-btn-wrapper {
-            border: none !important; padding: 0 !important; background: transparent !important;
-            box-shadow: none !important; width: 100% !important; transition: transform 0.2s;
-        }
-        div.stButton > button.poster-btn-wrapper:hover { transform: scale(1.02); background: transparent !important; }
-        div.stButton > button.poster-btn-wrapper p { display: none !important; }
-    </style>
-    """, unsafe_allow_html=True)
     
     columns_per_row = 4
     for i in range(0, len(display_movies), columns_per_row):
@@ -167,27 +154,28 @@ def render_movie_grid(display_movies, current_user):
             global_status = row["Status"] if row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
             
             with cols[idx]:
-                # Custom Movie HTML Content Container Box
+                # 1. Main Movie Card UI Box
                 st.markdown(f"""
                 <div class='movie-card'>
-                    <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 6px;'>{row['Title']}</div>
-                    <div class='movie-meta' style='margin-bottom: 12px;'>📅 {row['Year']}</div>
+                    <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 4px;'>{row['Title']}</div>
+                    <div class='movie-meta' style='margin-bottom: 8px;'>📅 {row['Year']}</div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # FIX: Poster Container wrapped inside a styling-isolated image execution button trigger
-                if st.button("", key=f"poster_click_{m_id}", use_container_width=True, help="Click poster for details"):
-                    movie_details_dialog(m_id, current_user, row["Title"])
+                # 2. Stable Poster Rendering
+                st.image(row["Poster"], use_container_width=True)
                 
-                # Inject visual image container inside the button structure block coordinates
-                st.markdown(f"<style>button[key='poster_click_{m_id}'] {{ background-image: url('{row['Poster']}'); background-size: cover; background-position: center; aspect-ratio: 2/3; width: 100%; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom:12px; }}</style>", unsafe_allow_html=True)
+                # 3. Clickable text link to open the centered information window
+                if st.button("ℹ️ Info", key=f"info_text_{m_id}", use_container_width=True, type="secondary"):
+                    movie_details_dialog(m_id)
                 
-                # Display status indicator text line
+                # Display group movie status text
                 status_color = "#3182ce" if global_status == "Plan to Watch" else "#38a169"
                 st.markdown(f"📌 Status: <span style='color:{status_color}; font-weight:700;'>{global_status}</span>", unsafe_allow_html=True)
                 
+                # 4. Standalone "Edit Your Review" Button
                 if global_status == "Watched":
-                    if st.button("✍️ Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True):
+                    if st.button("✍️ Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
                         edit_review_dialog(m_id, current_user, row["Title"])
                 else:
                     st.caption("🔒 Reviews unlocked once marked Watched")
@@ -198,6 +186,6 @@ def render_movie_grid(display_movies, current_user):
                     st.markdown("<div style='margin-top: 10px; font-size: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 8px;'>", unsafe_allow_html=True)
                     for _, rev in all_group_reviews.iterrows():
                         comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
-                        st.markdown(f"👤 {rev['Username']}: {rev['Rating']}{comment_str}")
+                        st.markdown(f"👤 **{rev['Username']}**: {rev['Rating']}{comment_str}")
                     st.markdown("</div>", unsafe_allow_html=True)
                 st.write("")
