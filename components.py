@@ -223,26 +223,22 @@ def render_movie_grid(display_movies, current_user):
                 bg_color = "#f3f4f6" if global_status == "Plan to Watch" else "#ffffff"
                 ##card_style = "opacity: 0.65; filter: grayscale(15%); transition: opacity 0.3s;" if global_status == "Plan to Watch" else ""
 
-                st.markdown(f"""
-                    <style>
-                        div[data-elementinstance="{m_id}"] {{
-                            background-color: {bg_color} !important;
-                        }}
-                        div[data-testid="stVZone"] > div:has(button[key="info_text_{m_id}"]) {{
-                            background-color: {bg_color} !important;
-                            border-radius: 8px;
-                        }}
-                    </style>
+               st.markdown(f"""
+                <style>
+                    div[data-testid="stVerticalBlockBorderWrapper"]:has(button[key="info_text_{m_id}"]) {{
+                        background-color: {bg_color} !important;
+                        border-radius: 8px;
+                    }}
+                </style>
                 """, unsafe_allow_html=True)
-                
+
                 with st.container(border=True):
-                    # Styled metadata header block
                     st.markdown(f"""
-                    <div style='text-align: left; {card_style}'>
-                        <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>{row['Title']}</div>
-                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'> Year: {row['Year']}</div>
-                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'> Director: {dir_str}</div>
-                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 8px;'> Runtime: {run_str}</div>
+                    <div style='text-align: left;'>
+                        <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>🎬 {row['Title']}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'>📅 Year: {row['Year']}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'>📣 Director: {dir_str}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 8px;'>⏱️ Runtime: {run_str}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     
