@@ -32,7 +32,7 @@ def add_item_dialog():
                                     st.error("This movie is already on the group dashboard!")
                                 else:
                                     # Fetch rich details ONCE during creation to optimize API limits
-                                    m_detail_url = f"https://omdbapi.com{item['imdbID']}&apikey={OMDB_API_KEY}"
+                                    m_detail_url = f"https://omdbapi.com/?i={item['imdbID']}&apikey={OMDB_API_KEY}"
                                     fetched_director = "N/A"
                                     fetched_runtime = "N/A"
                                     try:
