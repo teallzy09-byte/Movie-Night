@@ -58,8 +58,9 @@ def movie_details_dialog(m_id):
     
     # Safely manage previous date state strings
     existing_date_str = str(m_row["DateWatched"]).strip() if "DateWatched" in m_row else ""
+    is_initially_unknown = (existing_date_str == "Unknown")
     try:
-        if existing_date_str and existing_date_str != "nan" and existing_date_str != "":
+        if existing_date_str and existing_date_str not in ["nan", "", "Unknown"]:
             default_date = datetime.strptime(existing_date_str, "%Y-%m-%d").date()
         else:
             default_date = datetime.today().date()
@@ -100,8 +101,14 @@ def movie_details_dialog(m_id):
     # Conditional date watch entry picker appears when Watched radio evaluates True
     new_date_str = ""
     if new_status == "Watched":
-        selected_date = st.date_input("Date Watched", value=default_date, key=f"date_pick_{m_id}")
-        new_date_str = selected_date.strftime("%Y-%m-%d")
+        # NEW: Checkbox allowing group members to select "Unknown date"
+        unknown_checkbox = st.checkbox("Unknown watch date", value=is_initially_unknown, key=f"unknown_check_{m_id}")
+        
+        if unknown_checkbox:
+            new_date_str = "Unknown"
+        else:
+            selected_date = st.date_input("Date Watched", value=default_date, key=f"date_pick_{m_id}")
+            new_date_str = selected_date.strftime("%Y-%m-%d")
     
     if st.button("Save Group Status", key=f"save_status_{m_id}", use_container_width=True, type="primary"):
         target_idx = movie_db[movie_db["MovieID"] == m_id].index
@@ -189,9 +196,10 @@ def render_movie_grid(display_movies, current_user):
                     
                     # Watch Date clean stream text row (Only shows if Status is Watched)
                     if global_status == "Watched" and "DateWatched" in row and str(row["DateWatched"]).strip() != "" and str(row["DateWatched"]).strip() != "nan":
-                        st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>Watched on: {row['DateWatched']}</div>", unsafe_allow_html=True)
-                    elif global_status == "Watched":
-                        st.markdown("<div style='font-size: 0.85rem; color: #a0aec0; margin-bottom: 6px; font-style: italic;'>No watch date log set</div>", unsafe_allow_html=True)
+                        if str(row["DateWatched"]).strip() == "Unknown":
+                            st.markdown(f"<div style='font-size: 0.85rem; color: #718096; margin-bottom: 6px; font-style: italic;'>🗓️ Watched on: Unknown</div>", unsafe_allow_html=True)
+                        else:
+                            st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>🗓️ Watched on: {row['DateWatched']}</div>", unsafe_allow_html=True)
                     
                     if global_status == "Watched":
                         if st.button("✍️ Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
