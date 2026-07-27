@@ -47,10 +47,14 @@ with col_hdr:
     st.markdown("## 🎞️ Shared Movie Board")
 with col_prof:
     st.markdown(f"👋 Active Session: **{current_user}**")
-    if st.button("🚪 Logout", size="small"):
+    with col_prof:
+    st.markdown(f"👋 Active Session: **{current_user}**")
+    # FIX: Removed the size="small" parameter to prevent the TypeError crash
+    if st.button("🚪 Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
         st.rerun()
+
 with col_btn:
     if st.button("➕ Add New Movie", use_container_width=True, type="primary"):
         add_item_dialog()
