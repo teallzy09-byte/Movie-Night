@@ -236,10 +236,10 @@ def render_movie_grid(display_movies, current_user):
                 with st.container(border=True):
                     st.markdown(f"""
                     <div style='text-align: left;'>
-                        <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>🎬 {row['Title']}</div>
-                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'>📅 Year: {row['Year']}</div>
-                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'>📣 Director: {dir_str}</div>
-                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 8px;'>⏱️ Runtime: {run_str}</div>
+                        <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>{row['Title']}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'> Year: {row['Year']}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'> Director: {dir_str}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 8px;'> Runtime: {run_str}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     
