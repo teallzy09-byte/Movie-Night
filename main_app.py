@@ -129,34 +129,54 @@ def add_item_dialog():
 # 5. VIEW LAYOUT COMPOSITION
 # ----------------------------------------------------
 
-# Row Structure matching GroupPick layout header
+# Banner notification error callout if connection is broken
+if not omdb_healthy:
+    st.error(f"⚠️ **OMDb Server Connection Failure:** {omdb_msg}")
+
 col_title, col_space, col_add = st.columns([4, 4, 2])
 with col_title:
     st.markdown("## 🎞️ Movie Night")
 with col_add:
-    if st.button("➕ Add Item", key="main_add_btn", type="primary", use_container_width=True):
+    # Disable button dynamically if startup check failed
+    if st.button("➕ Add Item", key="main_add_btn", type="primary", use_container_width=True, disabled=not omdb_healthy):
         add_item_dialog()
 
-# Inline Header Counter Bar Layout
-st.markdown(f"""
-<div class='filter-bar'>
-    <div class='filter-btn active'>All ({len(existing_data)})</div>
-    <div class='filter-btn'>Plan to Watch ({len(existing_data[existing_data['Status']=='Plan to Watch']) if not existing_data.empty else 0})</div>
-    <div class='filter-btn'>Watched ({len(existing_data[existing_data['Status']=='Watched']) if not existing_data.empty else 0})</div>
-</div>
-""", unsafe_allow_html=True)
+# Compute filter counts dynamically
+all_count = len(existing_data)
+plan_count = len(existing_data[existing_data['Status'] == 'Plan to Watch']) if not existing_data.empty else 0
+watched_count = len(existing_data[existing_data['Status'] == 'Watched']) if not existing_data.empty else 0
+
+# Interactive Filter Bar using horizontal Streamlit buttons
+col_f1, col_f2, col_f3, col_spacer = st.columns([1, 1.3, 1.1, 6])
+with col_f1:
+    if st.button(f"All ({all_count})", type="primary" if st.session_state.current_filter == "All" else "secondary", use_container_width=True):
+        st.session_state.current_filter = "All"
+        st.rerun()
+with col_f2:
+    if st.button(f"Plan to Watch ({plan_count})", type="primary" if st.session_state.current_filter == "Plan to Watch" else "secondary", use_container_width=True):
+        st.session_state.current_filter = "Plan to Watch"
+        st.rerun()
+with col_f3:
+    if st.button(f"Watched ({watched_count})", type="primary" if st.session_state.current_filter == "Watched" else "secondary", use_container_width=True):
+        st.session_state.current_filter = "Watched"
+        st.rerun()
+
+st.markdown("---")
+
+# Filter down dataset before building rows
+display_data = existing_data.copy()
+if not display_data.empty and st.session_state.current_filter != "All":
+    display_data = display_data[display_data["Status"] == st.session_state.current_filter]
 
 # Grid Card Canvas Renderer logic
-if not existing_data.empty:
-    cards_layout_limit = 4  # Display up to 4 parallel columns
-    
-    for i in range(0, len(existing_data), cards_layout_limit):
-        row_slice = existing_data.iloc[i : i + cards_layout_limit]
+if not display_data.empty:
+    cards_layout_limit = 4
+    for i in range(0, len(display_data), cards_layout_limit):
+        row_slice = display_data.iloc[i : i + cards_layout_limit]
         cols = st.columns(cards_layout_limit)
         
         for idx, (df_idx, row) in enumerate(row_slice.iterrows()):
             with cols[idx]:
-                # 1. Custom Visual HTML Card Box Wrap
                 st.markdown(f"""
                 <div class='movie-card'>
                     <img class='movie-poster' src='{row['Poster']}'>
@@ -165,46 +185,15 @@ if not existing_data.empty:
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # 2. Interactive Widget Inputs
                 status_choices = ["Plan to Watch", "Watched"]
                 current_status_idx = status_choices.index(row["Status"]) if row["Status"] in status_choices else 0
                 
-                updated_status = st.selectbox(
-                    "Status", 
-                    status_choices, 
-                    index=current_status_idx, 
-                    key=f"status_select_{df_idx}"
-                )
+                updated_status = st.selectbox("Status", status_choices, index=current_status_idx, key=f"status_select_{df_idx}")
                 
-                # Check status changes and trigger save
                 if updated_status != row["Status"]:
                     existing_data.at[df_idx, "Status"] = updated_status
-                    # If changed back to plan to watch, clear out values
                     if updated_status == "Plan to Watch":
                         existing_data.at[df_idx, "Rating"] = "Not Set"
                     save_data(existing_data)
-                
-                # Star Rating Input
-                if updated_status == "Watched":
-                    rating_options = ["⭐ 10/10", "⭐ 9/10", "⭐ 8/10", "⭐ 7/10", "⭐ 6/10", "⭐ 5/10", "👎 Poor"]
-                    current_rating_str = str(row["Rating"])
-                    
-                    # Deduce default fallback configuration tracking indices
-                    default_rating_idx = 2  # default 8/10
-                    for op_idx, val in enumerate(rating_options):
-                        if current_rating_str in val:
-                            default_rating_idx = op_idx
-                            
-                    selected_rating = st.selectbox(
-                        "Rating", 
-                        rating_options, 
-                        index=default_rating_idx, 
-                        key=f"rating_select_{df_idx}"
-                    )
-                    
-                    extracted_rating_value = selected_rating.split(" ")[-1]
-                    if extracted_rating_value != current_rating_str:
-                        existing_data.at[df_idx, "Rating"] = extracted_rating_value
-                        save_data(existing_data)
 else:
-    st.info("No movie listings are populated in your sheet. Click 'Add Item' above to open your OMDb connection window!")
+    st.info("No movie items match the selected filter category.")
