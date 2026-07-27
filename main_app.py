@@ -111,6 +111,9 @@ def add_item_dialog():
 col_title, col_space, col_add = st.columns([4, 4, 2])
 with col_title:
     st.markdown("## 🎞️ Movie Night")
+    with col_add:
+    if st.button("➕ Add New Movie", use_container_width=True, type="primary"):
+        add_item_dialog()
     
 # Compute filter counts dynamically
 all_count = len(existing_data)
