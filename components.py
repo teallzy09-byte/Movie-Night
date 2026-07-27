@@ -167,7 +167,7 @@ def render_movie_grid(display_movies, current_user):
         
         for idx, (_, row) in enumerate(row_slice.iterrows()):
             m_id = row["MovieID"]
-            global_status = row["📌Status"] if row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
+            global_status = row["Status"] if row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
             
             with cols[idx]:
                 with st.container(border=True):
@@ -185,7 +185,7 @@ def render_movie_grid(display_movies, current_user):
                     
                     # Status Indicator Line
                     status_color = "#3182ce" if global_status == "Plan to Watch" else "#38a169"
-                    st.markdown(f"<div style='font-size: 0.9rem; margin-top: 6px; margin-bottom: 4px;'>Status: <span style='color:{status_color}; font-weight:700;'>{global_status}</span></div>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size: 0.9rem; margin-top: 6px; margin-bottom: 4px;'>📌 Status: <span style='color:{status_color}; font-weight:700;'>{global_status}</span></div>", unsafe_allow_html=True)
                     
                     # Watch Date clean stream text row (Only shows if Status is Watched)
                     if global_status == "Watched" and "DateWatched" in row and str(row["DateWatched"]).strip() != "" and str(row["DateWatched"]).strip() != "nan":
