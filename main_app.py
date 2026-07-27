@@ -25,6 +25,12 @@ st.markdown("""
     .movie-title { font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 4px; min-height: 55px; }
     .movie-meta { font-size: 0.85rem; color: #718096; margin-bottom: 12px; }
     .review-box { background-color: #f7fafc; padding: 8px; border-radius: 6px; border-left: 3px solid #3182ce; font-size: 0.85rem; margin-top: 6px; margin-bottom: 6px;}
+    div[data-baseweb="select"] {
+        cursor: pointer !important;
+    }
+    div[data-baseweb="select"] * {
+        cursor: pointer !important;
+    }
 </style>
 """, unsafe_allow_html=True)
 
