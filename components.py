@@ -67,6 +67,7 @@ def movie_details_dialog(m_id):
     """Centered large pop-up overlay modal rendering metadata, status, and watch date."""
     movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status", "DateWatched"])
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
+    user_db = load_table("Users", ["Username", "Password"])
     
     m_row = movie_db[movie_db["MovieID"] == m_id].iloc[0]
     global_status = m_row["Status"] if m_row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
@@ -238,14 +239,8 @@ def render_movie_grid(display_movies, current_user):
                     elif global_status == "Watched":
                         st.markdown("<div style='font-size: 0.85rem; color: #a0aec0; margin-bottom: 4px; font-style: italic;'>🗓️ No watch date log set</div>", unsafe_allow_html=True)
                     
-                    # =========================================================================================
-                    # START HIGHLIGHT: NEW CLEAN TEXT LINE (SHOWS WHO PICKED THE FILM WITHIN CONTAINER)
-                    # =========================================================================================
                     if "Picker" in row and str(row["Picker"]).strip() != "" and str(row["Picker"]).strip() != "nan":
                         st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>👤 Picked by: {row['Picker']}</div>", unsafe_allow_html=True)
-                    # =========================================================================================
-                    # END HIGHLIGHT
-                    # =========================================================================================
                     
                     if global_status == "Watched":
                         if st.button("✍️ Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
