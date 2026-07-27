@@ -16,7 +16,7 @@ def add_item_dialog():
             response = requests.get(search_url, timeout=5).json()
             if response.get("Response") == "True":
                 st.markdown("---")
-                movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status", "DateWatched"])
+                movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status", "DateWatched", "Director", "Runtime"])
                 
                 for item in response.get("Search", []):
                     if item["Type"] in ["movie", "series"]:
@@ -26,18 +26,32 @@ def add_item_dialog():
                             st.image(p_url, use_container_width=True)
                         with col_info:
                             st.markdown(f"#### {item['Title']}")
-                            st.caption(f"Year: {item['Year']}")
-                            if st.button("Add to Group List", key=f"add_{item['imdbID']}", use_container_width=True):
+                            st.caption(f" Year: {item['Year']}")
+                            if st.button("➕ Add to Group List", key=f"add_{item['imdbID']}", use_container_width=True):
                                 if item['imdbID'] in movie_db["MovieID"].values:
                                     st.error("This movie is already on the group dashboard!")
                                 else:
+                                    # Fetch rich details ONCE during creation to optimize API limits
+                                    m_detail_url = f"https://omdbapi.com{item['imdbID']}&apikey={OMDB_API_KEY}"
+                                    fetched_director = "N/A"
+                                    fetched_runtime = "N/A"
+                                    try:
+                                        detail_res = requests.get(m_detail_url, timeout=5).json()
+                                        if detail_res.get("Response") == "True":
+                                            fetched_director = detail_res.get("Director", "N/A")
+                                            fetched_runtime = detail_res.get("Runtime", "N/A")
+                                    except Exception:
+                                        pass
+
                                     new_movie = pd.DataFrame([{
                                         "MovieID": item['imdbID'],
                                         "Title": item['Title'].strip(),
                                         "Poster": p_url,
                                         "Year": item['Year'],
                                         "Status": "Plan to Watch",
-                                        "DateWatched": "" # Initializes empty field structure
+                                        "DateWatched": "",
+                                        "Director": fetched_director,
+                                        "Runtime": fetched_runtime
                                     }])
                                     updated_movies = pd.concat([movie_db, new_movie], ignore_index=True)
                                     save_table("Movies", updated_movies)
@@ -196,6 +210,8 @@ def render_movie_grid(display_movies, current_user):
                     <div style='text-align: left;'>
                         <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>{row['Title']}</div>
                         <div style='font-size: 0.85rem; color: #718096; margin-bottom: 8px;'>Year: {row['Year']}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 2px;'>Director: {row.get('Director', 'N/A')}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 8px;'>Runtime: {row.get('Runtime', 'N/A')}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     
