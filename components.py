@@ -9,7 +9,7 @@ OMDB_API_KEY = "43ac7081"
 def add_item_dialog():
     """Popup modal searching OMDb API directory."""
     search_query = st.text_input("Search Movie Title", placeholder="e.g. Inception...")
-     if search_query.strip():
+    if search_query.strip():
         search_url = f"https://omdbapi.com/?s={search_query.strip()}&apikey={OMDB_API_KEY}"
         try:
             response = requests.get(search_url, timeout=5).json()
@@ -19,7 +19,7 @@ def add_item_dialog():
                 
                 for item in response.get("Search", []):
                     if item["Type"] in ["movie", "series"]:
-                        col_img, col_info = st.columns([1, 2])
+                        col_img, col_info = st.columns()
                         with col_img:
                             p_url = item["Poster"] if item["Poster"] != "N/A" else "https://astratic.com"
                             st.image(p_url, use_container_width=True)
