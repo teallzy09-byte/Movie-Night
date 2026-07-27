@@ -68,11 +68,15 @@ def add_item_dialog():
         search_url = f"https://omdbapi.com/?s={search_query.strip()}&apikey={OMDB_API_KEY}"
         
         try:
-            response = requests.get(search_url, timeout=5).json()
+            response = requests.get(search_url, params=params, timeout=5)
+            if response.status_code != 200:
+                st.error(f"OMDb request failed with status code {response.status_code}.")
+                return
             
-            if response.get("Response") == "True":
+            data = response.json()
+            if data.get("Response") == "True":
                 st.markdown("---")
-                for item in response.get("Search", []):
+                for item in data.get("Search", []):
                     if item["Type"] in ["movie", "series", "episode"]:
                         col_img, col_info = st.columns([1, 2])
                         
@@ -100,9 +104,11 @@ def add_item_dialog():
                                     updated_df = pd.concat([existing_data, new_row], ignore_index=True)
                                     save_data(updated_df)
             else:
-                st.warning(f"OMDb Message: {response.get('Error')}")
-        except Exception:
-            st.error("Could not reach OMDb API servers. Check network routing.")
+                st.warning(f"OMDb Message: {data.get('Error', 'Unknown error')}")
+        except requests.exceptions.RequestException as exc:
+            st.error(f"Could not reach OMDb API servers. Check network routing. ({exc.__class__.__name__})")
+        except ValueError:
+            st.error("OMDb returned an unexpected response format.")
 
 # ----------------------------------------------------
 # 5. VIEW LAYOUT COMPOSITION
