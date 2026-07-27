@@ -46,7 +46,7 @@ def add_item_dialog():
             st.error(f"Search API Error: {e}")
 
 def render_movie_grid(display_movies, current_user):
-    """Generates the 4-column movie grid with click-to-edit review sheets and clean line streams."""
+    """Generates the 4-column movie grid with poster popovers, status radios, and clean streams."""
     movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status"])
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
     
@@ -57,9 +57,10 @@ def render_movie_grid(display_movies, current_user):
         
         for idx, (_, row) in enumerate(row_slice.iterrows()):
             m_id = row["MovieID"]
+            global_status = row["Status"] if row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
             
             with cols[idx]:
-                # 1. Base card visual presentation
+                # 1. Base card layout frame construction
                 st.markdown(f"""
                 <div class='movie-card'>
                     <div>
@@ -70,25 +71,29 @@ def render_movie_grid(display_movies, current_user):
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # 2. Universal Group Status selector
-                status_options = ["Plan to Watch", "Watched"]
-                global_status = row["Status"] if row["Status"] in status_options else "Plan to Watch"
-                s_idx = status_options.index(global_status)
-                new_status = st.selectbox("Group Movie Status", status_options, index=s_idx, key=f"status_{m_id}")
+                # 2. STATUS DISPLAY ROW: Renders clear bold indicator lines above action elements
+                status_color = "#3182ce" if global_status == "Plan to Watch" else "#38a169"
+                st.markdown(f"📌 Status: <span style='color:{status_color}; font-weight:700;'>{global_status}</span>", unsafe_allow_html=True)
                 
-                if new_status != row["Status"]:
-                    movie_db.loc[movie_db["MovieID"] == m_id, "Status"] = new_status
-                    save_table("Movies", movie_db)
-                    st.rerun()
-                
-                # 3. POPUP WINDOW LAYOUT USING ST.POPOVER (Appears when clicked to edit review)
-                if new_status == "Watched":
-                    with st.popover("✍️ Write / Edit Your Review", use_container_width=True):
-                        st.markdown(f"### Reviewing: *{row['Title']}*")
-                        
+                # 3. UNIFIED EDIT POPUP WINDOW WINDOW
+                with st.popover("⚙️ Manage Status & Review", use_container_width=True):
+                    st.markdown(f"### Options for: *{row['Title']}*")
+                    
+                    # A. Universal Status Configuration using Radio Selectors
+                    status_options = ["Plan to Watch", "Watched"]
+                    r_status_idx = status_options.index(global_status)
+                    new_status = st.radio("Group Movie Status", status_options, index=r_status_idx, key=f"radio_status_{m_id}")
+                    
+                    st.markdown("---")
+                    
+                    # B. Conditional Personal Review Ingest Logic
+                    new_rating = "7/10"
+                    new_comment = ""
+                    
+                    if new_status == "Watched":
+                        st.caption("✍️ Your Review:")
                         user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
                         
-                        # Extract previous states safely if they exist
                         if not user_rev.empty:
                             raw_rating = user_rev["Rating"].iloc[0]
                             raw_comment = user_rev["Comment"].iloc[0]
@@ -100,17 +105,25 @@ def render_movie_grid(display_movies, current_user):
                         
                         if current_comment == "nan":
                             current_comment = ""
-                        
+                            
                         rating_options = [f"{x}/10" for x in range(1, 11)]
                         r_idx = rating_options.index(current_rating) if current_rating in rating_options else 6
                         
                         new_rating = st.selectbox("Your Score", rating_options, index=r_idx, key=f"rating_{m_id}_{current_user}")
                         new_comment = st.text_area("Your Notes/Comments", value=current_comment, key=f"comm_{m_id}_{current_user}")
+                    else:
+                        st.info("Reviews become available once group status is updated to Watched.")
+                    
+                    # C. Unified Save Trigger Execution Point
+                    if st.button("Save Changes", key=f"save_btn_{m_id}_{current_user}", use_container_width=True, type="primary"):
+                        # Process Universal Movie Status Alteration
+                        if new_status != row["Status"]:
+                            movie_db.loc[movie_db["MovieID"] == m_id, "Status"] = new_status
+                            save_table("Movies", movie_db)
                         
-                        if st.button("💾 Save Review Updates", key=f"save_btn_{m_id}_{current_user}", use_container_width=True, type="primary"):
-                            # Delete existing record entry for safety
-                            review_db = review_db[~((review_db["MovieID"] == m_id) & (review_db["Username"] == current_user))]
-                            
+                        # Process Personal Review Modifications (Only if active status evaluates as Watched)
+                        review_db = review_db[~((review_db["MovieID"] == m_id) & (review_db["Username"] == current_user))]
+                        if new_status == "Watched":
                             updated_review = pd.DataFrame([{
                                 "MovieID": m_id,
                                 "Username": current_user,
@@ -118,17 +131,17 @@ def render_movie_grid(display_movies, current_user):
                                 "Comment": new_comment.strip()
                             }])
                             review_db = pd.concat([review_db, updated_review], ignore_index=True)
-                            save_table("Reviews", review_db)
-                            st.success("Review logged!")
-                            st.rerun()
+                        save_table("Reviews", review_db)
+                        
+                        st.success("Changes synced!")
+                        st.rerun()
                 
-                # 4. CLEAN STREAM FEED DESIGN: Renders clean single text lines directly inside the frame
+                # 4. CLEAN STREAM DISCUSSION PANEL FEED LINES
                 all_group_reviews = review_db[review_db["MovieID"] == m_id]
-                if not all_group_reviews.empty:
+                if not all_group_reviews.empty and global_status == "Watched":
                     st.markdown("<div style='margin-top: 10px; font-size: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 8px;'>", unsafe_allow_html=True)
                     for _, rev in all_group_reviews.iterrows():
                         comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
-                        # Outputs as a clean, standardized, borderless text row element
-                        st.markdown(f"👤 **{rev['Username']}**: {rev['Rating']}{comment_str}")
+                        st.markdown(f"👤 {rev['Username']}: {rev['Rating']}{comment_str}")
                     st.markdown("</div>", unsafe_allow_html=True)
                 st.write("")
