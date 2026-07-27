@@ -46,7 +46,7 @@ st.markdown("""
 @st.cache_resource(ttl=3600)
 def verify_omdb_connection(api_key):
     """Pings OMDb backend once on startup to ensure API and network routes work."""
-    test_url = f"https://omdbapi.com{api_key}"
+    test_url = f"https://omdbapi.com"
     try:
         response = requests.get(test_url, timeout=4)
         if response.status_code == 200 and response.json().get("Response") == "True":
@@ -80,12 +80,11 @@ def save_data(df):
 # ----------------------------------------------------
 @st.dialog("🎬 Add Item to Watchlist")
 def add_item_dialog():
-    st.write("Type a title below to fetch live, structured movie details from OMDb:")
+    st.write("Search Movie Below")
     search_query = st.text_input("Search Movie Title", key="omdb_search_bar", placeholder="e.g. Primer, Barbarian...")
     
     if search_query.strip():
-        # FIXED: Added the required 'www.', '?', and 's=' search query structures
-        search_url = f"https://omdbapi.com{search_query.strip()}&apikey={OMDB_API_KEY}"
+        search_url = f"https://omdbapi.com/?t={search_query.strip()}&apikey={OMDB_API_KEY}"
         
         try:
             response = requests.get(search_url, timeout=5).json()
@@ -97,7 +96,6 @@ def add_item_dialog():
                         col_img, col_info = st.columns([1, 2])
                         
                         with col_img:
-                            # FIXED: Changed placeholder link to a stable UI placeholder generator
                             poster_url = item["Poster"] if item["Poster"] != "N/A" else "https://ui-avatars.com"
                             st.image(poster_url, use_container_width=True)
                             
