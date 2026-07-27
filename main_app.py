@@ -146,27 +146,31 @@ all_count = len(existing_data)
 plan_count = len(existing_data[existing_data['Status'] == 'Plan to Watch']) if not existing_data.empty else 0
 watched_count = len(existing_data[existing_data['Status'] == 'Watched']) if not existing_data.empty else 0
 
-# Interactive Filter Bar using horizontal Streamlit buttons
+# Interactive Filter Bar using safe session_state dictionary fallback logic
 col_f1, col_f2, col_f3, col_spacer = st.columns([1, 1.3, 1.1, 6])
+
+# Safely extract the filter using .get() to prevent unexpected AttributeError crashes
+active_filter = st.session_state.get("current_filter", "All")
+
 with col_f1:
-    if st.button(f"All ({all_count})", type="primary" if st.session_state.current_filter == "All" else "secondary", use_container_width=True):
+    if st.button(f"All ({all_count})", type="primary" if active_filter == "All" else "secondary", use_container_width=True):
         st.session_state.current_filter = "All"
         st.rerun()
 with col_f2:
-    if st.button(f"Plan to Watch ({plan_count})", type="primary" if st.session_state.current_filter == "Plan to Watch" else "secondary", use_container_width=True):
+    if st.button(f"Plan to Watch ({plan_count})", type="primary" if active_filter == "Plan to Watch" else "secondary", use_container_width=True):
         st.session_state.current_filter = "Plan to Watch"
         st.rerun()
 with col_f3:
-    if st.button(f"Watched ({watched_count})", type="primary" if st.session_state.current_filter == "Watched" else "secondary", use_container_width=True):
+    if st.button(f"Watched ({watched_count})", type="primary" if active_filter == "Watched" else "secondary", use_container_width=True):
         st.session_state.current_filter = "Watched"
         st.rerun()
 
 st.markdown("---")
 
-# Filter down dataset before building rows
+# Filter down dataset before building rows using the verified safe variable
 display_data = existing_data.copy()
-if not display_data.empty and st.session_state.current_filter != "All":
-    display_data = display_data[display_data["Status"] == st.session_state.current_filter]
+if not display_data.empty and active_filter != "All":
+    display_data = display_data[display_data["Status"] == active_filter]
 
 # Grid Card Canvas Renderer logic
 if not display_data.empty:
