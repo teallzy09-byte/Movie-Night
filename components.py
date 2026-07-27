@@ -259,9 +259,11 @@ def render_movie_grid(display_movies, current_user):
                     elif global_status == "Watched":
                         st.markdown("<div style='font-size: 0.85rem; color: #a0aec0; margin-bottom: 4px; font-style: '>🗓️ No watch date log set</div>", unsafe_allow_html=True)
                     
+                    # 1. FIXED: This block is now pulled outside the Watched loops to run universally
                     if "Picker" in row and str(row["Picker"]).strip() != "" and str(row["Picker"]).strip() != "nan":
                         st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>👤 Picked by: {row['Picker']}</div>", unsafe_allow_html=True)
                     
+                    # 2. Review action buttons continue normally down below
                     if global_status == "Watched":
                         if st.button("Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
                             edit_review_dialog(m_id, current_user, row["Title"])
