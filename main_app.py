@@ -93,7 +93,7 @@ def add_item_dialog():
                             if st.button("➕ Select & Add", key=btn_id, use_container_width=True):
                                 global existing_data
                                 titles_in_db = existing_data["Title"].dropna().astype(str).str.lower().values
-                                if item['Title'].strip().lower() in existing_data['Title'].str.lower().values:
+                                if item['Title'].strip().lower() in titles_in_db:
                                     st.error(f"'{item['Title']}' is already in your database!")
                                 else:
                                     new_row = pd.DataFrame([{
