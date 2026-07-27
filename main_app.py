@@ -45,7 +45,7 @@ col_hdr, col_prof, col_btn = st.columns([4, 3, 3])
 with col_hdr:
     st.markdown("## 🎞️ Shared Movie Board")
 with col_prof:
-    st.markdown(f"👋 Active Session: **{current_user}**")
+    st.markdown(f"Active Session: **{current_user}**")
     if st.button("🚪 Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
