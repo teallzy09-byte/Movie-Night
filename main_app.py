@@ -1,17 +1,16 @@
 import streamlit as st
-
-st.title("🚀 Streamlit Online Test App")
-
-
-user_name = st.text_input("Enter your name:", placeholder="Type here...")
+from streamlit_gsheets import GSheetsConnection
 
 
-age = st.slider("Select your age:", min_value=0, max_value=100, value=25)
+# Create a connection object.
+conn = st.connection("gsheets", type=GSheetsConnection)
 
-if st.button("Submit Profile"):
-    if user_name:
-        st.success(f"Hello {user_name}! Your profile is ready.")
-        st.write(f"You are **{age}** years old.")
-        st.balloons()
-    else:
-        st.warning("Please enter a name before submitting.")
+df = conn.read(worksheet="Sheet1",
+    ttl="10m",
+    usecols=[0, 1],
+    nrows=3,
+)
+
+# Print results.
+for row in df.itertuples():
+    st.write(f"{row.name} has a :{row.pet}:")
