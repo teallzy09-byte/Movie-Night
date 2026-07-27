@@ -124,7 +124,8 @@ def movie_details_dialog(m_id):
             save_table("Reviews", review_db)
             
         st.success("Group settings synchronized!")
-        st.rerun()
+        
+    st.rerun()
 
     st.markdown("---")
     st.markdown("⚠️ **Danger Zone**")
@@ -138,7 +139,8 @@ def movie_details_dialog(m_id):
         save_table("Reviews", updated_reviews)
         
         st.toast("Movie removed successfully!")
-        st.rerun()
+        
+    st.rerun()
 
 @st.dialog("Write or Edit Your Review")
 def edit_review_dialog(m_id, current_user, movie_title):
