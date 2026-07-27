@@ -27,7 +27,17 @@ st.markdown("""
     .review-box { background-color: #f7fafc; padding: 8px; border-radius: 6px; border-left: 3px solid #3182ce; font-size: 0.85rem; margin-top: 6px; margin-bottom: 6px;}
     div[data-baseweb="select"] {
         cursor: pointer !important;
+        user-select: none !important;
     }
+    
+    /* Lock the text input tag from showing editing behaviors or text-carets */
+    div[data-baseweb="select"] input {
+        cursor: pointer !important;
+        pointer-events: none !important; /* Block the text editor engine completely */
+        caret-color: transparent !important; /* Hide typing blinking indicators */
+    }
+    
+    /* Ensure all structural sub-elements inherit the hand cursor icon */
     div[data-baseweb="select"] * {
         cursor: pointer !important;
     }
