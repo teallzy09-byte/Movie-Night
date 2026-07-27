@@ -41,31 +41,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 2. STARTUP OMDb HEALTH CHECK
-# ----------------------------------------------------
-@st.cache_resource(ttl=3600)
-def verify_omdb_connection(api_key):
-    """Pings OMDb backend once on startup to ensure API and network routes work."""
-    test_url = f"https://omdbapi.com"
-    try:
-        response = requests.get(test_url, timeout=4)
-        if response.status_code == 200 and response.json().get("Response") == "True":
-            return True, "Connected"
-        return False, f"OMDb API Error: {response.json().get('Error', 'Invalid configuration.')}"
-    except Exception as e:
-        return False, f"Network Failure: {str(e)}"
-
-omdb_healthy, omdb_msg = verify_omdb_connection(OMDB_API_KEY)
-
-
-# ----------------------------------------------------
 # 3. DATABASE MANAGEMENT
 # ----------------------------------------------------
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 try:
     existing_data = conn.read(ttl=0)
-    # Safely clean trailing whitespace from key identification fields
     if not existing_data.empty:
         existing_data["Title"] = existing_data["Title"].astype(str).str.strip()
 except Exception:
@@ -81,7 +62,7 @@ def save_data(df):
 @st.dialog("🎬 Add Item to Watchlist")
 def add_item_dialog():
     st.write("Search Movie Below")
-    search_query = st.text_input("Search Movie Title", key="omdb_search_bar", placeholder="e.g. Primer, Barbarian...")
+    search_query = st.text_input("Search Movie Title", key="search", placeholder="e.g. Lala Land, Barbarian, Other Movies...")
     
     if search_query.strip():
         search_url = f"https://omdbapi.com/?t={search_query.strip()}&apikey={OMDB_API_KEY}"
@@ -127,18 +108,10 @@ def add_item_dialog():
 # 5. VIEW LAYOUT COMPOSITION
 # ----------------------------------------------------
 
-# Banner notification error callout if connection is broken
-if not omdb_healthy:
-    st.error(f"⚠️ **OMDb Server Connection Failure:** {omdb_msg}")
-
 col_title, col_space, col_add = st.columns([4, 4, 2])
 with col_title:
     st.markdown("## 🎞️ Movie Night")
-with col_add:
-    # Disable button dynamically if startup check failed
-    if st.button("➕ Add Item", key="main_add_btn", type="primary", use_container_width=True, disabled=not omdb_healthy):
-        add_item_dialog()
-
+    
 # Compute filter counts dynamically
 all_count = len(existing_data)
 plan_count = len(existing_data[existing_data['Status'] == 'Plan to Watch']) if not existing_data.empty else 0
