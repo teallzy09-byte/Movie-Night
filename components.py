@@ -16,7 +16,7 @@ def add_item_dialog():
             response = requests.get(search_url, timeout=5).json()
             if response.get("Response") == "True":
                 st.markdown("---")
-                movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status", "DateWatched", "Director", "Runtime"])
+                movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status", "DateWatched", "Director", "Runtime", "Picker"])
                 
                 for item in response.get("Search", []):
                     if item["Type"] in ["movie", "series"]:
@@ -51,7 +51,8 @@ def add_item_dialog():
                                         "Status": "Plan to Watch",
                                         "DateWatched": "",
                                         "Director": fetched_director,
-                                        "Runtime": fetched_runtime
+                                        "Runtime": fetched_runtime,
+                                        "Picker": ""
                                     }])
                                     updated_movies = pd.concat([movie_db, new_movie], ignore_index=True)
                                     save_table("Movies", updated_movies)
@@ -123,6 +124,11 @@ def movie_details_dialog(m_id):
         else:
             selected_date = st.date_input("Date Watched", value=default_date, key=f"date_pick_{m_id}")
             new_date_str = selected_date.strftime("%Y-%m-%d")
+
+    user_list = sorted(user_db["Username"].dropna().unique().tolist()) if not user_db.empty else []
+    existing_picker = str(m_row["Picker"]).strip() if "Picker" in m_row else ""
+    p_idx = user_list.index(existing_picker) if existing_picker in user_list else 0
+    new_picker = st.selectbox("Movie Picked By", options=user_list, index=p_idx, key=f"picker_sel_{m_id}")
     
     if st.button("Save Group Status", key=f"save_status_{m_id}", use_container_width=True, type="primary"):
         target_idx = movie_db[movie_db["MovieID"] == m_id].index
@@ -130,6 +136,7 @@ def movie_details_dialog(m_id):
         # Save both Universal Status and Universal watch date to sheet rows
         movie_db.loc[target_idx, "Status"] = new_status
         movie_db.loc[target_idx, "DateWatched"] = new_date_str if new_status == "Watched" else ""
+        movie_db.loc[target_idx, "Picker"] = new_picker  # NEW: Saves name to database
         save_table("Movies", movie_db)
         
         # Clean up orphan individual reviews if moved back to plan list
@@ -220,16 +227,25 @@ def render_movie_grid(display_movies, current_user):
                     if st.button("Info", key=f"info_text_{m_id}", use_container_width=True, type="secondary"):
                         movie_details_dialog(m_id)
                     
-                    # Status Indicator Line
                     status_color = "#3182ce" if global_status == "Plan to Watch" else "#38a169"
                     st.markdown(f"<div style='font-size: 0.9rem; margin-top: 6px; margin-bottom: 4px;'>📌 Status: <span style='color:{status_color}; font-weight:700;'>{global_status}</span></div>", unsafe_allow_html=True)
                     
-                    # Watch Date clean stream text row (Only shows if Status is Watched)
                     if global_status == "Watched" and "DateWatched" in row and str(row["DateWatched"]).strip() != "" and str(row["DateWatched"]).strip() != "nan":
                         if str(row["DateWatched"]).strip() == "Unknown":
-                            st.markdown(f"<div style='font-size: 0.85rem; color: #718096; margin-bottom: 6px; '>🗓️ Watched on: Unknown</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='font-size: 0.85rem; color: #718096; margin-bottom: 4px; font-style: italic;'>🗓️ Watched on: Unknown</div>", unsafe_allow_html=True)
                         else:
-                            st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>🗓️ Watched on: {row['DateWatched']}</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 4px;'>🗓️ Watched on: {row['DateWatched']}</div>", unsafe_allow_html=True)
+                    elif global_status == "Watched":
+                        st.markdown("<div style='font-size: 0.85rem; color: #a0aec0; margin-bottom: 4px; font-style: italic;'>🗓️ No watch date log set</div>", unsafe_allow_html=True)
+                    
+                    # =========================================================================================
+                    # START HIGHLIGHT: NEW CLEAN TEXT LINE (SHOWS WHO PICKED THE FILM WITHIN CONTAINER)
+                    # =========================================================================================
+                    if "Picker" in row and str(row["Picker"]).strip() != "" and str(row["Picker"]).strip() != "nan":
+                        st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>👤 Picked by: {row['Picker']}</div>", unsafe_allow_html=True)
+                    # =========================================================================================
+                    # END HIGHLIGHT
+                    # =========================================================================================
                     
                     if global_status == "Watched":
                         if st.button("✍️ Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
