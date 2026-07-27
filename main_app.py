@@ -1,4 +1,10 @@
+import os
+import sys
 import streamlit as st
+
+# Force Python to read modules from the repository subfolders correctly on Streamlit Cloud
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
 from database import load_table
 from auth import render_auth_gateway
 from components import add_item_dialog, render_movie_grid
