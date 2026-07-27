@@ -86,13 +86,13 @@ def render_movie_grid(display_movies, current_user):
                     st.caption("✍️ Your Review:")
                     
                     user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
-                    current_rating = str(user_rev["Rating"].values[0]) if not user_rev.empty else "⭐⭐⭐"
+                    current_rating = str(user_rev["Rating"].values[0]) if not user_rev.empty else "7/10"
                     current_comment = str(user_rev["Comment"].values[0]) if not user_rev.empty else ""
                     if current_comment == "nan":
                         current_comment = ""
-                    
-                    rating_options = ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]
-                    r_idx = rating_options.index(current_rating) if current_rating in rating_options else 2
+
+                    rating_options = [f"{x}/10" for x in range(1, 11)]
+                    r_idx = rating_options.index(current_rating) if current_rating in rating_options else 6  # Defaults to 7/10
                     
                     new_rating = st.selectbox("Your Rating", rating_options, index=r_idx, key=f"rating_{m_id}_{current_user}")
                     new_comment = st.text_input("Comment/Notes", value=current_comment, key=f"comm_{m_id}_{current_user}")
