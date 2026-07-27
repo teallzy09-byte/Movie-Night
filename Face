@@ -1,12 +1,17 @@
 import streamlit as st
 
-# Initialize the button text state if it doesn't exist
-if "button_text" not in st.session_state:
-    st.session_state.button_text = "OK"
+st.title("🚀 Streamlit Online Test App")
 
-# Define the function to update the text when clicked
-def change_text():
-    st.session_state.button_text = "Test Done"
 
-# Create the button on the screen
-st.button(st.session_state.button_text, on_click=change_text)
+user_name = st.text_input("Enter your name:", placeholder="Type here...")
+
+
+age = st.slider("Select your age:", min_value=0, max_value=100, value=25)
+
+if st.button("Submit Profile"):
+    if user_name:
+        st.success(f"Hello {user_name}! Your profile is ready.")
+        st.write(f"You are **{age}** years old.")
+        st.balloons()
+    else:
+        st.warning("Please enter a name before submitting.")
