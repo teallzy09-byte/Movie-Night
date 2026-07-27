@@ -197,7 +197,7 @@ def render_movie_grid(display_movies, current_user):
                     # Watch Date clean stream text row (Only shows if Status is Watched)
                     if global_status == "Watched" and "DateWatched" in row and str(row["DateWatched"]).strip() != "" and str(row["DateWatched"]).strip() != "nan":
                         if str(row["DateWatched"]).strip() == "Unknown":
-                            st.markdown(f"<div style='font-size: 0.85rem; color: #718096; margin-bottom: 6px; font-style: italic;'>🗓️ Watched on: Unknown</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='font-size: 0.85rem; color: #718096; margin-bottom: 6px; '>🗓️ Watched on: Unknown</div>", unsafe_allow_html=True)
                         else:
                             st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>🗓️ Watched on: {row['DateWatched']}</div>", unsafe_allow_html=True)
                     
