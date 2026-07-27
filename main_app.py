@@ -1,3 +1,4 @@
+import streamlit as pd
 import streamlit as st
 from streamlit_gsheets import GSheetsConnection
 import pandas as pd
@@ -91,6 +92,7 @@ def add_item_dialog():
                             btn_id = f"add_{item['imdbID']}"
                             if st.button("➕ Select & Add", key=btn_id, use_container_width=True):
                                 global existing_data
+                                titles_in_db = existing_data["Title"].dropna().astype(str).str.lower().values
                                 if item['Title'].strip().lower() in existing_data['Title'].str.lower().values:
                                     st.error(f"'{item['Title']}' is already in your database!")
                                 else:
