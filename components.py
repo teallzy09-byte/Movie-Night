@@ -9,8 +9,8 @@ OMDB_API_KEY = "43ac7081"
 def add_item_dialog():
     """Popup modal searching OMDb API directory."""
     search_query = st.text_input("Search Movie Title", placeholder="e.g. Inception...")
-    if search_query.strip():
-        search_url = f"https://omdbapi.com{search_query.strip()}&apikey={OMDB_API_KEY}"
+     if search_query.strip():
+        search_url = f"https://omdbapi.com/?s={search_query.strip()}&apikey={OMDB_API_KEY}"
         try:
             response = requests.get(search_url, timeout=5).json()
             if response.get("Response") == "True":
