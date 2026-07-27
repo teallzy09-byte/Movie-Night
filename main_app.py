@@ -6,7 +6,7 @@ from streamlit_gsheets import GSheetsConnection
 conn = st.connection("gsheets", type=GSheetsConnection)
 
 df = conn.read(
-    spreadsheet= "https://docs.google.com/spreadsheets/d/1P1ntjpaQC5pPX_3j-m3GScgJRGqhHalNpumwmOVpeXc/edit?gid=0#gid=0",
+    spreadsheet= "https://docs.google.com/spreadsheets/d/1P1ntjpaQC5pPX_3j-m3GScgJRGqhHalNpumwmOVpeXc/edit",
     worksheet="Sheet1",
     ttl="10m",
     usecols=[0, 1],
