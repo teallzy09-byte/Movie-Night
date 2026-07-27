@@ -19,7 +19,7 @@ def add_item_dialog():
                 
                 for item in response.get("Search", []):
                     if item["Type"] in ["movie", "series"]:
-                        col_img, col_info = st.columns()
+                        col_img, col_info = st.columns([1, 2])
                         with col_img:
                             p_url = item["Poster"] if item["Poster"] != "N/A" else "https://astratic.com"
                             st.image(p_url, use_container_width=True)
