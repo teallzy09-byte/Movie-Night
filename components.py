@@ -1,4 +1,17 @@
-try:
+import streamlit as st
+import pandas as pd
+import requests
+from database import load_table, save_table
+
+OMDB_API_KEY = "43ac7081"
+
+@st.dialog("🎬 Add Movie to Group Board")
+def add_item_dialog():
+    """Popup modal searching OMDb API directory."""
+    search_query = st.text_input("Search Movie Title", placeholder="e.g. Inception...")
+    if search_query.strip():
+        search_url = f"https://omdbapi.com/?s={search_query.strip()}&apikey={OMDB_API_KEY}"
+        try:
             response = requests.get(search_url, timeout=5).json()
             if response.get("Response") == "True":
                 st.markdown("---")
@@ -116,6 +129,6 @@ def render_movie_grid(display_movies, current_user):
                     for _, rev in all_group_reviews.iterrows():
                         comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
                         # Outputs as a clean, standardized, borderless text row element
-                        st.markdown(f"👤 {rev['Username']}: {rev['Rating']}{comment_str}")
+                        st.markdown(f"👤 **{rev['Username']}**: {rev['Rating']}{comment_str}")
                     st.markdown("</div>", unsafe_allow_html=True)
                 st.write("")
