@@ -62,10 +62,10 @@ def save_data(df):
 # ----------------------------------------------------
 @st.dialog("🎬 Add Item to Watchlist")
 def add_item_dialog():
-    st.write("Type a title below to fetch live, structured movie details from OMDb:")
+    st.write("Search for Movie Title Below")
     
     # Text input triggers the request instantly on enter
-    search_query = st.text_input("Search Movie Title", key="omdb_search_bar", placeholder="e.g. Primer, Barbarian, Inception...")
+    search_query = st.text_input("Search Movie Title", key="omdb_search_bar", placeholder="e.g. Lala Land, Barbarian, Inception...")
     
     if search_query.strip():
         # Querying the OMDb Search ('s') endpoint
@@ -85,7 +85,7 @@ def add_item_dialog():
                         
                         with col_img:
                             # Use placeholder if poster url value returns blank/empty
-                            poster_url = item["Poster"] if item["Poster"] != "N/A" else "https://placeholder.com"
+                            poster_url = item["Poster"] if item["Poster"] != "N/A" else "https://blocks.astratic.com/img/general-img-landscape.png"
                             st.image(poster_url, use_container_width=True)
                             
                         with col_info:
