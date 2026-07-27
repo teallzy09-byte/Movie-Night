@@ -114,6 +114,6 @@ def render_movie_grid(display_movies, current_user):
                 if not all_group_reviews.empty:
                     st.markdown("**Group Discussion & Ratings:**")
                     for _, rev in all_group_reviews.iterrows():
-                        comment_str = f" - \"{rev['Comment']}\" if rev['Comment'] and str(rev['Comment']) != "nan" else ""
+                        comment_str = f" - \{rev['Comment']}\" if rev['Comment'] and str(rev['Comment']) != "nan" else ""
                         st.markdown(f"<div class='review-box'>👤 {rev['Username']}: {rev['Rating']}{comment_str}</div>", unsafe_allow_html=True)
                 st.write("")
