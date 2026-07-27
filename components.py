@@ -221,9 +221,9 @@ def render_movie_grid(display_movies, current_user):
                 if run_str == "nan" or not run_str: run_str = "N/A"
 
                 bg_color = "#f3f4f6" if global_status == "Plan to Watch" else "#ffffff"
-                ##card_style = "opacity: 0.65; filter: grayscale(15%); transition: opacity 0.3s;" if global_status == "Plan to Watch" else ""
 
-               st.markdown(f"""
+
+                st.markdown(f"""
                 <style>
                     div[data-testid="stVerticalBlockBorderWrapper"]:has(button[key="info_text_{m_id}"]) {{
                         background-color: {bg_color} !important;
@@ -231,6 +231,7 @@ def render_movie_grid(display_movies, current_user):
                     }}
                 </style>
                 """, unsafe_allow_html=True)
+
 
                 with st.container(border=True):
                     st.markdown(f"""
