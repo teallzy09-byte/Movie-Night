@@ -213,8 +213,18 @@ def render_movie_grid(display_movies, current_user):
             global_status = row["Status"] if row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
             
             with cols[idx]:
+                # 1. EXTRACT DATA FIRST (Resolves the NameError crash)
+                dir_str = str(row['Director']).strip() if 'Director' in row and pd.notna(row['Director']) else 'N/A'
+                run_str = str(row['Runtime']).strip() if 'Runtime' in row and pd.notna(row['Runtime']) else 'N/A'
+                
+                if dir_str == "nan" or not dir_str: dir_str = "N/A"
+                if run_str == "nan" or not run_str: run_str = "N/A"
+                
+                # 2. EVALUATE STYLE CONDITIONAL (Safe now that data variables exist in memory)
                 card_style = "opacity: 0.65; filter: grayscale(15%); transition: opacity 0.3s;" if global_status == "Plan to Watch" else ""
+
                 with st.container(border=True):
+                    # Styled metadata header block
                     st.markdown(f"""
                     <div style='text-align: left; {card_style}'>
                         <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>🎬 {row['Title']}</div>
@@ -244,7 +254,7 @@ def render_movie_grid(display_movies, current_user):
                         st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>👤 Picked by: {row['Picker']}</div>", unsafe_allow_html=True)
                     
                     if global_status == "Watched":
-                        if st.button("✍️ Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
+                        if st.button("Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
                             edit_review_dialog(m_id, current_user, row["Title"])
                     else:
                         st.caption("Reviews unlocked once marked Watched")
