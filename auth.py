@@ -7,6 +7,7 @@ def render_auth_gateway():
     st.markdown("<div class='auth-container'>", unsafe_allow_html=True)
     st.markdown("## 🍿 Group Movie Night Login")
     
+    # Unpack the list into two distinct tab variables
     login_tab, signup_tab = st.tabs(["🔒 Sign In", "📝 Create Account"])
     user_db = load_table("Users", ["Username", "Password"])
     
@@ -17,7 +18,7 @@ def render_auth_gateway():
             login_pass = st.text_input("Password", type="password")
             if st.form_submit_button("Log In", use_container_width=True):
                 if login_user in user_db["Username"].values:
-                    stored_hash = user_db.loc[user_db["Username"] == login_user, "Password"].values
+                    stored_hash = user_db.loc[user_db["Username"] == login_user, "Password"].values[0]
                     if hash_password(login_pass) == stored_hash:
                         st.session_state.logged_in = True
                         st.session_state.username = login_user
@@ -25,7 +26,7 @@ def render_auth_gateway():
                 st.error("Invalid username or password configuration.")
                 
     # --- SIGN UP ROUTINE ---
-   with signup_tab:
+    with signup_tab:
         with st.form("signup_form"):
             new_user = st.text_input("Choose Username").strip()
             new_pass = st.text_input("Create Password", type="password")
