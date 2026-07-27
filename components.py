@@ -51,11 +51,9 @@ def movie_details_dialog(m_id):
     movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status"])
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
     
-    # Locate targets inside current data matrices safely
     m_row = movie_db[movie_db["MovieID"] == m_id].iloc[0]
     global_status = m_row["Status"] if m_row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
     
-    # Fetch rich extended metadata asynchronously using OMDb API mapping
     detail_url = f"https://omdbapi.com{m_id}&apikey={OMDB_API_KEY}"
     director, genre, actors, plot = "N/A", "N/A", "N/A", "No plot description available."
     
@@ -69,32 +67,29 @@ def movie_details_dialog(m_id):
     except Exception:
         pass
 
-    # --- POP-UP MODAL UI COMPOSITION ---
     col_poster, col_meta = st.columns([1, 1.8])
     with col_poster:
         st.image(m_row["Poster"], use_container_width=True)
     with col_meta:
         st.markdown(f"## {m_row['Title']}")
-        st.markdown(f"🗓️ **Release Year:** {m_row['Year']}")
-        st.markdown(f"🎬 **Director:** {director}")
-        st.markdown(f"🏷️ **Genres:** {genre}")
-        st.markdown(f"👥 **Cast:** {actors}")
-        st.markdown(f"📝 **Plot Summary:** {plot}")
+        st.markdown(f"**Release Year**: {m_row['Year']}")
+        st.markdown(f"**Director:** {director}")
+        st.markdown(f"**Genres:** {genre}")
+        st.markdown(f"**Cast:** {actors}")
+        st.markdown(f"**Plot Summary:** {plot}")
         
     st.markdown("---")
     st.markdown("### ⚙️ Group Management")
     
-    # Universal Status configuration utilizing Group Radio selectors at the bottom
     status_options = ["Plan to Watch", "Watched"]
     r_status_idx = status_options.index(global_status)
     new_status = st.radio("Group Movie Status", status_options, index=r_status_idx, key=f"radio_status_{m_id}")
     
-    if st.button("💾 Save Group Status", key=f"save_status_{m_id}", use_container_width=True, type="primary"):
+    if st.button("Save Group Status", key=f"save_status_{m_id}", use_container_width=True, type="primary"):
         if new_status != m_row["Status"]:
             movie_db.loc[movie_db["MovieID"] == m_id, "Status"] = new_status
             save_table("Movies", movie_db)
             
-            # Clean review orphans if changed back to Plan to Watch
             if new_status == "Plan to Watch":
                 review_db = review_db[review_db["MovieID"] != m_id]
                 save_table("Reviews", review_db)
@@ -102,14 +97,13 @@ def movie_details_dialog(m_id):
             st.success("Group status synchronized!")
             st.rerun()
 
-@st.dialog("✍️ Write/Edit Your Review")
+@st.dialog("Write/Edit Your Review")
 def edit_review_dialog(m_id, current_user, movie_title):
     """Dedicated modal for adding or updating user-specific reviews."""
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
     user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
     
     if not user_rev.empty:
-        # Extract scalar safely to prevent array indexing issues
         current_rating = str(user_rev["Rating"].values[0])
         current_comment = str(user_rev["Comment"].values[0])
     else:
@@ -126,7 +120,7 @@ def edit_review_dialog(m_id, current_user, movie_title):
     new_rating = st.selectbox("Your Score", rating_options, index=r_idx, key=f"rating_{m_id}_{current_user}")
     new_comment = st.text_area("Your Notes/Comments", value=current_comment, key=f"comm_{m_id}_{current_user}")
     
-    if st.button("💾 Save Review Updates", use_container_width=True, type="primary"):
+    if st.button("Save Review Updates", use_container_width=True, type="primary"):
         review_db = review_db[~((review_db["MovieID"] == m_id) & (review_db["Username"] == current_user))]
         updated_review = pd.DataFrame([{
             "MovieID": m_id,
@@ -140,7 +134,7 @@ def edit_review_dialog(m_id, current_user, movie_title):
         st.rerun()
 
 def render_movie_grid(display_movies, current_user):
-    """Generates the 4-column movie grid with stable posters, text info clicks, and reviews."""
+    """Generates the 4-column movie grid with poster elements securely bound inside the card frame."""
     movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status"])
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
     
@@ -154,38 +148,39 @@ def render_movie_grid(display_movies, current_user):
             global_status = row["Status"] if row["Status"] in ["Plan to Watch", "Watched"] else "Plan to Watch"
             
             with cols[idx]:
-                # 1. Main Movie Card UI Box
-                st.markdown(f"""
-                <div class='movie-card'>
-                    <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 4px;'>{row['Title']}</div>
-                    <div class='movie-meta' style='margin-bottom: 8px;'>📅 {row['Year']}</div>
-                </div>
-                """, unsafe_allow_html=True)
-                
-                # 2. Stable Poster Rendering
-                st.image(row["Poster"], use_container_width=True)
-                
-                # 3. Clickable text link to open the centered information window
-                if st.button("ℹ️ Info", key=f"info_text_{m_id}", use_container_width=True, type="secondary"):
-                    movie_details_dialog(m_id)
-                
-                # Display group movie status text
-                status_color = "#3182ce" if global_status == "Plan to Watch" else "#38a169"
-                st.markdown(f"📌 Status: <span style='color:{status_color}; font-weight:700;'>{global_status}</span>", unsafe_allow_html=True)
-                
-                # 4. Standalone "Edit Your Review" Button
-                if global_status == "Watched":
-                    if st.button("✍️ Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
-                        edit_review_dialog(m_id, current_user, row["Title"])
-                else:
-                    st.caption("🔒 Reviews unlocked once marked Watched")
-                
-                # Clean Stream group data activity display feed
-                all_group_reviews = review_db[review_db["MovieID"] == m_id]
-                if not all_group_reviews.empty and global_status == "Watched":
-                    st.markdown("<div style='margin-top: 10px; font-size: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 8px;'>", unsafe_allow_html=True)
-                    for _, rev in all_group_reviews.iterrows():
-                        comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
-                        st.markdown(f"👤 **{rev['Username']}**: {rev['Rating']}{comment_str}")
-                    st.markdown("</div>", unsafe_allow_html=True)
-                st.write("")
+                # FIX: We use st.container() with border=True to force EVERYTHING inside a unified box card
+                with st.container(border=True):
+                    # Title and Year Metadata
+                    st.markdown(f"""
+                    <div style='text-align: left;'>
+                        <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>{row['Title']}</div>
+                        <div style='font-size: 0.85rem; color: #718096; margin-bottom: 8px;'>📅 {row['Year']}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    # Stable Movie Poster
+                    st.image(row["Poster"], use_container_width=True)
+                    
+                    # Clickable Text Info button
+                    if st.button("Info", key=f"info_text_{m_id}", use_container_width=True, type="secondary"):
+                        movie_details_dialog(m_id)
+                    
+                    # Status Indicator Line
+                    status_color = "#3182ce" if global_status == "Plan to Watch" else "#38a169"
+                    st.markdown(f"<div style='font-size: 0.9rem; margin-top: 6px; margin-bottom: 6px;'>📌 Status: <span style='color:{status_color}; font-weight:700;'>{global_status}</span></div>", unsafe_allow_html=True)
+                    
+                    # Standalone Review Action Button
+                    if global_status == "Watched":
+                        if st.button(" Edit Your Review", key=f"edit_rev_trigger_{m_id}", use_container_width=True, type="primary"):
+                            edit_review_dialog(m_id, current_user, row["Title"])
+                    else:
+                        st.caption(" Reviews unlocked once marked Watched")
+                    
+                    # Clean Stream Group Feed Line Streams
+                    all_group_reviews = review_db[review_db["MovieID"] == m_id]
+                    if not all_group_reviews.empty and global_status == "Watched":
+                        st.markdown("<div style='margin-top: 10px; font-size: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 8px;'>", unsafe_allow_html=True)
+                        for _, rev in all_group_reviews.iterrows():
+                            comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
+                            st.markdown(f"👤 {rev['Username']}: {rev['Rating']}{comment_str}")
+                        st.markdown("</div>", unsafe_allow_html=True)
