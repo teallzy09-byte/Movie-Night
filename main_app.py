@@ -68,7 +68,7 @@ def add_item_dialog():
         search_url = f"https://omdbapi.com/?s={search_query.strip()}&apikey={OMDB_API_KEY}"
         
         try:
-            response = requests.get(search_url, params=params, timeout=5)
+            response = requests.get(search_url, timeout=5)
             if response.status_code != 200:
                 st.error(f"OMDb request failed with status code {response.status_code}.")
                 return
