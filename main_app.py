@@ -182,7 +182,7 @@ def add_item_dialog():
 col_title, col_space, col_add = st.columns([4, 4, 2])
 with col_title:
     st.markdown("## 🎞️ Movie Night")
-        with col_prof:
+    with col_prof:
         st.markdown(f"👋 Active Session: **{current_user}**")
         if st.button("🚪 Logout", size="small"):
         st.session_state.logged_in = False
