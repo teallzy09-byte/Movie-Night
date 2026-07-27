@@ -126,6 +126,20 @@ def movie_details_dialog(m_id):
         st.success("Group settings synchronized!")
         st.rerun()
 
+    st.markdown("---")
+    st.markdown("⚠️ **Danger Zone**")
+    if st.button("🗑️ Remove Movie from Group Board", key=f"del_movie_{m_id}", use_container_width=True, type="secondary"):
+        # 1. Strip the movie entry out of the master Movies dataframe
+        updated_movies = movie_db[movie_db["MovieID"] != m_id]
+        save_table("Movies", updated_movies)
+        
+        # 2. Strip out all linked friend reviews to prevent orphan data baggage
+        updated_reviews = review_db[review_db["MovieID"] != m_id]
+        save_table("Reviews", updated_reviews)
+        
+        st.toast("Movie removed successfully!")
+        st.rerun()
+
 @st.dialog("Write or Edit Your Review")
 def edit_review_dialog(m_id, current_user, movie_title):
     """Dedicated modal for adding or updating user-specific reviews."""
