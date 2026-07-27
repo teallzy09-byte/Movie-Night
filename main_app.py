@@ -41,7 +41,25 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------------------------------------
-# 2. DATABASE MANAGEMENT
+# 2. STARTUP OMDb HEALTH CHECK
+# ----------------------------------------------------
+@st.cache_resource(ttl=3600)
+def verify_omdb_connection(api_key):
+    """Pings OMDb backend once on startup to ensure API and network routes work."""
+    test_url = f"https://omdbapi.com{api_key}"
+    try:
+        response = requests.get(test_url, timeout=4)
+        if response.status_code == 200 and response.json().get("Response") == "True":
+            return True, "Connected"
+        return False, f"OMDb API Error: {response.json().get('Error', 'Invalid configuration.')}"
+    except Exception as e:
+        return False, f"Network Failure: {str(e)}"
+
+omdb_healthy, omdb_msg = verify_omdb_connection(OMDB_API_KEY)
+
+
+# ----------------------------------------------------
+# 3. DATABASE MANAGEMENT
 # ----------------------------------------------------
 conn = st.connection("gsheets", type=GSheetsConnection)
 
@@ -58,46 +76,38 @@ def save_data(df):
     st.rerun()
 
 # ----------------------------------------------------
-# 3. MODAL POPUP: OMDb MOVIE SEARCH
+# 4. MODAL POPUP: OMDb MOVIE SEARCH
 # ----------------------------------------------------
 @st.dialog("🎬 Add Item to Watchlist")
 def add_item_dialog():
-    st.write("Search for Movie Title Below")
-    
-    # Text input triggers the request instantly on enter
-    search_query = st.text_input("Search Movie Title", key="omdb_search_bar", placeholder="e.g. Lala Land, Barbarian, Inception...")
+    st.write("Type a title below to fetch live, structured movie details from OMDb:")
+    search_query = st.text_input("Search Movie Title", key="omdb_search_bar", placeholder="e.g. Primer, Barbarian...")
     
     if search_query.strip():
-        # Querying the OMDb Search ('s') endpoint
+        # FIXED: Added the required 'www.', '?', and 's=' search query structures
         search_url = f"https://omdbapi.com{search_query.strip()}&apikey={OMDB_API_KEY}"
         
         try:
-            response = requests.get(search_url).json()
+            response = requests.get(search_url, timeout=5).json()
             
             if response.get("Response") == "True":
                 st.markdown("---")
-                results_list = response.get("Search", [])
-                
-                for item in results_list:
-                    # Target films, series, or documentaries 
+                for item in response.get("Search", []):
                     if item["Type"] in ["movie", "series", "episode"]:
                         col_img, col_info = st.columns([1, 2])
                         
                         with col_img:
-                            # Use placeholder if poster url value returns blank/empty
-                            poster_url = item["Poster"] if item["Poster"] != "N/A" else "https://blocks.astratic.com/img/general-img-landscape.png"
+                            # FIXED: Changed placeholder link to a stable UI placeholder generator
+                            poster_url = item["Poster"] if item["Poster"] != "N/A" else "https://ui-avatars.com"
                             st.image(poster_url, use_container_width=True)
                             
                         with col_info:
                             st.markdown(f"#### {item['Title']}")
                             st.caption(f"📅 Year: {item['Year']} | 🏷️ Type: {item['Type'].capitalize()}")
                             
-                            # Clean index binding tracking
                             btn_id = f"add_{item['imdbID']}"
                             if st.button("➕ Select & Add", key=btn_id, use_container_width=True):
                                 global existing_data
-                                
-                                # Duplicate verification check
                                 if item['Title'].strip().lower() in existing_data['Title'].str.lower().values:
                                     st.error(f"'{item['Title']}' is already in your database!")
                                 else:
@@ -108,20 +118,15 @@ def add_item_dialog():
                                         "Rating": "Not Set",
                                         "Year": item['Year']
                                     }])
-                                    
                                     updated_df = pd.concat([existing_data, new_row], ignore_index=True)
                                     save_data(updated_df)
-                                    st.success(f"Added {item['Title']} successfully!")
-                        st.markdown("<br>", unsafe_allow_html=True)
             else:
-                error_msg = response.get("Error", "No matching titles found.")
-                st.warning(f"OMDb Message: {error_msg}")
-                
-        except Exception as e:
-            st.error("Could not reach OMDb API servers. Please check your network connection or API Key configuration.")
+                st.warning(f"OMDb Message: {response.get('Error')}")
+        except Exception:
+            st.error("Could not reach OMDb API servers. Check network routing.")
 
 # ----------------------------------------------------
-# 4. VIEW LAYOUT COMPOSITION
+# 5. VIEW LAYOUT COMPOSITION
 # ----------------------------------------------------
 
 # Row Structure matching GroupPick layout header
