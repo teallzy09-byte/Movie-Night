@@ -1,17 +1,4 @@
-import streamlit as st
-import pandas as pd
-import requests
-from database import load_table, save_table
-
-OMDB_API_KEY = "43ac7081"
-
-@st.dialog("🎬 Add Movie to Group Board")
-def add_item_dialog():
-    """Popup modal searching OMDb API directory."""
-    search_query = st.text_input("Search Movie Title", placeholder="e.g. Inception...")
-    if search_query.strip():
-        search_url = f"https://omdbapi.com/?s={search_query.strip()}&apikey={OMDB_API_KEY}"
-        try:
+try:
             response = requests.get(search_url, timeout=5).json()
             if response.get("Response") == "True":
                 st.markdown("---")
@@ -46,7 +33,7 @@ def add_item_dialog():
             st.error(f"Search API Error: {e}")
 
 def render_movie_grid(display_movies, current_user):
-    """Generates the 4-column aesthetic movie matrix layout framework grid."""
+    """Generates the 4-column movie grid with click-to-edit review sheets and clean line streams."""
     movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status"])
     review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
     
@@ -59,17 +46,18 @@ def render_movie_grid(display_movies, current_user):
             m_id = row["MovieID"]
             
             with cols[idx]:
+                # 1. Base card visual presentation
                 st.markdown(f"""
                 <div class='movie-card'>
                     <div>
                         <img class='movie-poster' src='{row['Poster']}'>
-                        <div class='movie-title'>{row['Title']}</div>
-                        <div class='movie-meta'>📅 {row['Year']}</div>
+                        <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 4px;'>{row['Title']}</div>
+                        <div class='movie-meta' style='margin-bottom: 8px;'>📅 {row['Year']}</div>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                # Universal Group Status selector
+                # 2. Universal Group Status selector
                 status_options = ["Plan to Watch", "Watched"]
                 global_status = row["Status"] if row["Status"] in status_options else "Plan to Watch"
                 s_idx = status_options.index(global_status)
@@ -80,40 +68,54 @@ def render_movie_grid(display_movies, current_user):
                     save_table("Movies", movie_db)
                     st.rerun()
                 
-                # Isolated Personal Review inputs
+                # 3. POPUP WINDOW LAYOUT USING ST.POPOVER (Appears when clicked to edit review)
                 if new_status == "Watched":
-                    st.markdown("---")
-                    st.caption("✍️ Your Review:")
-                    
-                    user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
-                    current_rating = str(user_rev["Rating"].values[0]) if not user_rev.empty else "7/10"
-                    current_comment = str(user_rev["Comment"].values[0]) if not user_rev.empty else ""
-                    if current_comment == "nan":
-                        current_comment = ""
-
-                    rating_options = [f"{x}/10" for x in range(1, 11)]
-                    r_idx = rating_options.index(current_rating) if current_rating in rating_options else 6  # Defaults to 7/10
-                    
-                    new_rating = st.selectbox("Your Rating", rating_options, index=r_idx, key=f"rating_{m_id}_{current_user}")
-                    new_comment = st.text_input("Comment/Notes", value=current_comment, key=f"comm_{m_id}_{current_user}")
-                    
-                    if new_rating != current_rating or new_comment != current_comment:
-                        review_db = review_db[~((review_db["MovieID"] == m_id) & (review_db["Username"] == current_user))]
-                        updated_review = pd.DataFrame([{
-                            "MovieID": m_id,
-                            "Username": current_user,
-                            "Rating": new_rating,
-                            "Comment": new_comment.strip()
-                        }])
-                        review_db = pd.concat([review_db, updated_review], ignore_index=True)
-                        save_table("Reviews", review_db)
-                        st.rerun()
+                    with st.popover("✍️ Write / Edit Your Review", use_container_width=True):
+                        st.markdown(f"### Reviewing: *{row['Title']}*")
+                        
+                        user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
+                        
+                        # Extract previous states safely if they exist
+                        if not user_rev.empty:
+                            raw_rating = user_rev["Rating"].iloc[0]
+                            raw_comment = user_rev["Comment"].iloc[0]
+                            current_rating = str(raw_rating) if pd.notna(raw_rating) else "7/10"
+                            current_comment = str(raw_comment) if pd.notna(raw_comment) else ""
+                        else:
+                            current_rating = "7/10"
+                            current_comment = ""
+                        
+                        if current_comment == "nan":
+                            current_comment = ""
+                        
+                        rating_options = [f"{x}/10" for x in range(1, 11)]
+                        r_idx = rating_options.index(current_rating) if current_rating in rating_options else 6
+                        
+                        new_rating = st.selectbox("Your Score", rating_options, index=r_idx, key=f"rating_{m_id}_{current_user}")
+                        new_comment = st.text_area("Your Notes/Comments", value=current_comment, key=f"comm_{m_id}_{current_user}")
+                        
+                        if st.button("💾 Save Review Updates", key=f"save_btn_{m_id}_{current_user}", use_container_width=True, type="primary"):
+                            # Delete existing record entry for safety
+                            review_db = review_db[~((review_db["MovieID"] == m_id) & (review_db["Username"] == current_user))]
+                            
+                            updated_review = pd.DataFrame([{
+                                "MovieID": m_id,
+                                "Username": current_user,
+                                "Rating": new_rating,
+                                "Comment": new_comment.strip()
+                            }])
+                            review_db = pd.concat([review_db, updated_review], ignore_index=True)
+                            save_table("Reviews", review_db)
+                            st.success("Review logged!")
+                            st.rerun()
                 
-                # Display friend discussion board feed
+                # 4. CLEAN STREAM FEED DESIGN: Renders clean single text lines directly inside the frame
                 all_group_reviews = review_db[review_db["MovieID"] == m_id]
                 if not all_group_reviews.empty:
-                    st.markdown("**Group Discussion & Ratings:**")
+                    st.markdown("<div style='margin-top: 10px; font-size: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 8px;'>", unsafe_allow_html=True)
                     for _, rev in all_group_reviews.iterrows():
-                        comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" else ""
-                        st.markdown(f"<div class='review-box'>👤 {rev['Username']}: {rev['Rating']}{comment_str}</div>", unsafe_allow_html=True)
+                        comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
+                        # Outputs as a clean, standardized, borderless text row element
+                        st.markdown(f"👤 {rev['Username']}: {rev['Rating']}{comment_str}")
+                    st.markdown("</div>", unsafe_allow_html=True)
                 st.write("")
