@@ -11,7 +11,7 @@ def render_auth_gateway():
     user_db = load_table("Users", ["Username", "Password"])
     
     # --- LOGIN ROUTINE ---
-     with login_tab:
+    with login_tab:
         with st.form("login_form"):
             login_user = st.text_input("Username").strip()
             login_pass = st.text_input("Password", type="password")
