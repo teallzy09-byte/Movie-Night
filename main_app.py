@@ -48,8 +48,8 @@ with col_hdr:
 with col_prof:
     st.markdown(f"👋 Active Session: **{current_user}**")
     with col_prof:
-    st.markdown(f"👋 Active Session: **{current_user}**")
-    # FIX: Removed the size="small" parameter to prevent the TypeError crash
+        st.markdown(f"👋 Active Session: **{current_user}**")
+    
     if st.button("🚪 Logout"):
         st.session_state.logged_in = False
         st.session_state.username = ""
