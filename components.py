@@ -95,7 +95,8 @@ def movie_details_dialog(m_id):
                 save_table("Reviews", review_db)
                 
             st.success("Group status synchronized!")
-            st.rerun()
+            
+        st.rerun()
 
 @st.dialog("Write/Edit Your Review")
 def edit_review_dialog(m_id, current_user, movie_title):
