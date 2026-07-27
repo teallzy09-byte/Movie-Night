@@ -225,6 +225,7 @@ def render_movie_grid(display_movies, current_user):
 
                 with st.container(border=True):
                     # Styled metadata header block
+                    st.markdown(f"<div style='{card_style}'>", unsafe_allow_html=True)
                     st.markdown(f"""
                     <div style='text-align: left; {card_style}'>
                         <div style='font-weight: 700; font-size: 1.15rem; color: #1a202c; margin-bottom: 2px;'>{row['Title']}</div>
@@ -266,3 +267,4 @@ def render_movie_grid(display_movies, current_user):
                             comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
                             st.markdown(f"👤{rev['Username']}: {rev['Rating']}{comment_str}")
                         st.markdown("</div>", unsafe_allow_html=True)
+                    st.markdown("</div>", unsafe_allow_html=True)
