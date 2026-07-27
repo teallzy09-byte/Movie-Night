@@ -65,7 +65,7 @@ def add_item_dialog():
     search_query = st.text_input("Search Movie Title", key="search", placeholder="e.g. Lala Land, Barbarian, Other Movies...")
     
     if search_query.strip():
-        search_url = f"https://omdbapi.com/?t={search_query.strip()}&apikey={OMDB_API_KEY}"
+        search_url = f"https://omdbapi.com/?s={search_query.strip()}&apikey={OMDB_API_KEY}"
         
         try:
             response = requests.get(search_url, timeout=5).json()
