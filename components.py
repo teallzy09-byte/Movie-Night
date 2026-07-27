@@ -204,5 +204,5 @@ def render_movie_grid(display_movies, current_user):
                         st.markdown("<div style='margin-top: 10px; font-size: 0.85rem; border-top: 1px solid #e2e8f0; padding-top: 8px;'>", unsafe_allow_html=True)
                         for _, rev in all_group_reviews.iterrows():
                             comment_str = f" - {rev['Comment']}" if rev['Comment'] and str(rev['Comment']) != "nan" and str(rev['Comment']).strip() != "" else ""
-                            st.markdown(f"👤{rev['Username']}: ⭐{rev['Rating']}{comment_str}")
+                            st.markdown(f"👤{rev['Username']}: {rev['Rating']}{comment_str}")
                         st.markdown("</div>", unsafe_allow_html=True)
