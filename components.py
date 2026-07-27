@@ -244,11 +244,11 @@ def render_movie_grid(display_movies, current_user):
                     
                     if global_status == "Watched" and "DateWatched" in row and str(row["DateWatched"]).strip() != "" and str(row["DateWatched"]).strip() != "nan":
                         if str(row["DateWatched"]).strip() == "Unknown":
-                            st.markdown(f"<div style='font-size: 0.85rem; color: #718096; margin-bottom: 4px; font-style: italic;'>🗓️ Watched on: Unknown</div>", unsafe_allow_html=True)
+                            st.markdown(f"<div style='font-size: 0.85rem; color: #718096; margin-bottom: 4px; font-style: '>🗓️ Watched on: Unknown</div>", unsafe_allow_html=True)
                         else:
                             st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 4px;'>🗓️ Watched on: {row['DateWatched']}</div>", unsafe_allow_html=True)
                     elif global_status == "Watched":
-                        st.markdown("<div style='font-size: 0.85rem; color: #a0aec0; margin-bottom: 4px; font-style: italic;'>🗓️ No watch date log set</div>", unsafe_allow_html=True)
+                        st.markdown("<div style='font-size: 0.85rem; color: #a0aec0; margin-bottom: 4px; font-style: '>🗓️ No watch date log set</div>", unsafe_allow_html=True)
                     
                     if "Picker" in row and str(row["Picker"]).strip() != "" and str(row["Picker"]).strip() != "nan":
                         st.markdown(f"<div style='font-size: 0.85rem; color: #4a5568; margin-bottom: 6px;'>👤 Picked by: {row['Picker']}</div>", unsafe_allow_html=True)
