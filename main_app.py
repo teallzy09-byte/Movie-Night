@@ -1,8 +1,8 @@
-import streamlit as pd
-import streamlit as st
-from streamlit_gsheets import GSheetsConnection
+import hashlib
 import pandas as pd
 import requests
+import streamlit as st
+from streamlit_gsheets import GSheetsConnection
 
 # ----------------------------------------------------
 # 1. INITIAL API CONFIG & THEME TUNING
@@ -42,23 +42,86 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ----------------------------------------------------
+# 2. CRYPTO SECURITY IMPLEMENTATION
+# ----------------------------------------------------
+def hash_password(password):
+    return hashlib.sha256(str.encode(password)).hexdigest()
+
+
+# ----------------------------------------------------
 # 3. DATABASE MANAGEMENT
 # ----------------------------------------------------
 conn = st.connection("gsheets", type=GSheetsConnection)
 
-try:
-    existing_data = conn.read(ttl=0)
-    if not existing_data.empty:
-        existing_data["Title"] = existing_data["Title"].astype(str).str.strip()
-except Exception:
-    existing_data = pd.DataFrame(columns=["Title", "Poster", "Status", "Rating", "Year"])
+def load_table(sheet_name, fallback_cols):
+    try:
+        df = conn.read(worksheet=sheet_name, ttl=0)
+        if not df.empty:
+            for col in df.columns:
+                df[col] = df[col].astype(str).str.strip()
+        return df
+    except Exception:
+        return pd.DataFrame(columns=fallback_cols)
 
-def save_data(df):
-    conn.update(data=df)
-    st.rerun()
+# Load global data tables
+user_db = load_table("Users", ["Username", "Password"])
+movie_db = load_table("Movies", ["MovieID", "Title", "Poster", "Year", "Status"])
+review_db = load_table("Reviews", ["MovieID", "Username", "Rating", "Comment"])
+
+def save_table(sheet_name, df):
+    conn.update(worksheet=sheet_name, data=df)
 
 # ----------------------------------------------------
-# 4. MODAL POPUP: OMDb MOVIE SEARCH
+# 4. USER PORTAL GATEWAY (AUTH)
+# ----------------------------------------------------
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+if "username" not in st.session_state:
+    st.session_state.username = ""
+
+if not st.session_state.logged_in:
+    st.markdown("<div class='auth-container'>", unsafe_allow_html=True)
+    st.markdown("## 🍿 Group Movie Night Login")
+    auth_mode = st.tabs(["🔒 Sign In", "📝 Create Account"])
+    
+    with auth_mode:
+        with st.form("login_form"):
+            login_user = st.text_input("Username").strip()
+            login_pass = st.text_input("Password", type="password")
+            if st.form_submit_button("Log In", use_container_width=True):
+                if login_user in user_db["Username"].values:
+                    stored_hash = user_db.loc[user_db["Username"] == login_user, "Password"].values
+                    if hash_password(login_pass) == stored_hash:
+                        st.session_state.logged_in = True
+                        st.session_state.username = login_user
+                        st.rerun()
+                st.error("Invalid username or password configuration.")
+                
+    with auth_mode:
+        with st.form("signup_form"):
+            new_user = st.text_input("Username").strip()
+            new_pass = st.text_input("Password", type="password")
+            confirm_pass = st.text_input("Confirm Password", type="password")
+            if st.form_submit_button("Register", use_container_width=True):
+                if new_pass != confirm_pass:
+                    st.error("Passwords match error.")
+                elif new_user in user_db["Username"].values:
+                    st.error("Username already exists.")
+                else:
+                    new_acc = pd.DataFrame([{"Username": new_user, "Password": hash_password(new_pass)}])
+                    user_db = pd.concat([user_db, new_acc], ignore_index=True)
+                    save_table("Users", user_db)
+                    st.success("Account created! You can now log in.")
+                    
+    st.markdown("</div>", unsafe_allow_html=True)
+    st.stop()
+
+current_user = st.session_state.username
+
+
+
+# ----------------------------------------------------
+# MODAL POPUP: OMDb MOVIE SEARCH
 # ----------------------------------------------------
 @st.dialog("🎬 Add Item to Watchlist")
 def add_item_dialog():
@@ -113,73 +176,128 @@ def add_item_dialog():
             st.error("OMDb returned an unexpected response format.")
 
 # ----------------------------------------------------
-# 5. VIEW LAYOUT COMPOSITION
+# VIEW LAYOUT COMPOSITION
 # ----------------------------------------------------
 
 col_title, col_space, col_add = st.columns([4, 4, 2])
 with col_title:
     st.markdown("## 🎞️ Movie Night")
-    with col_add:
-        if st.button("➕ Add New Movie", use_container_width=True, type="primary"):
-            add_item_dialog()
+    with col_prof:
+    st.markdown(f"👋 Active Session: **{current_user}**")
+    if st.button("🚪 Logout", size="small"):
+        st.session_state.logged_in = False
+        st.session_state.username = ""
+        st.rerun()
+with col_btn:
+    if st.button("➕ Add New Movie", use_container_width=True, type="primary"):
+        add_item_dialog()
     
-# Compute filter counts dynamically
-all_count = len(existing_data)
-plan_count = len(existing_data[existing_data['Status'] == 'Plan to Watch']) if not existing_data.empty else 0
-watched_count = len(existing_data[existing_data['Status'] == 'Watched']) if not existing_data.empty else 0
-
-# Interactive Filter Bar using safe session_state dictionary fallback logic
-col_f1, col_f2, col_f3, col_spacer = st.columns([1, 1.3, 1.1, 6])
-
-# Safely extract the filter using .get() to prevent unexpected AttributeError crashes
+# ----------------------------------------------------
+# 7. UNIVERSAL FILTER CONTROLS 
+# ----------------------------------------------------
 active_filter = st.session_state.get("current_filter", "All")
 
-with col_f1:
-    if st.button(f"All ({all_count})", type="primary" if active_filter == "All" else "secondary", use_container_width=True):
-        st.session_state.current_filter = "All"
-        st.rerun()
-with col_f2:
-    if st.button(f"Plan to Watch ({plan_count})", type="primary" if active_filter == "Plan to Watch" else "secondary", use_container_width=True):
-        st.session_state.current_filter = "Plan to Watch"
-        st.rerun()
-with col_f3:
-    if st.button(f"Watched ({watched_count})", type="primary" if active_filter == "Watched" else "secondary", use_container_width=True):
-        st.session_state.current_filter = "Watched"
-        st.rerun()
+all_c = len(movie_db)
+plan_c = len(movie_db[movie_db["Status"] == "Plan to Watch"])
+watch_c = len(movie_db[movie_db["Status"] == "Watched"])
+
+f_col1, f_col2, f_col3, _ = st.columns([1, 1.3, 1.1, 6])
+with f_col1:
+    if st.button(f"All ({all_c})", type="primary" if active_filter == "All" else "secondary", use_container_width=True):
+        st.session_state.current_filter = "All"; st.rerun()
+with f_col2:
+    if st.button(f"Plan to Watch ({plan_c})", type="primary" if active_filter == "Plan to Watch" else "secondary", use_container_width=True):
+        st.session_state.current_filter = "Plan to Watch"; st.rerun()
+with f_col3:
+    if st.button(f"Watched ({watch_c})", type="primary" if active_filter == "Watched" else "secondary", use_container_width=True):
+        st.session_state.current_filter = "Watched"; st.rerun()
 
 st.markdown("---")
 
-# Filter down dataset before building rows using the verified safe variable
-display_data = existing_data.copy()
-if not display_data.empty and active_filter != "All":
-    display_data = display_data[display_data["Status"] == active_filter]
+# Filter execution layout assignment
+if active_filter != "All":
+    display_movies = movie_db[movie_db["Status"] == active_filter]
+else:
+    display_movies = movie_db
 
-# Grid Card Canvas Renderer logic
-if not display_data.empty:
-    cards_layout_limit = 4
-    for i in range(0, len(display_data), cards_layout_limit):
-        row_slice = display_data.iloc[i : i + cards_layout_limit]
-        cols = st.columns(cards_layout_limit)
+# ----------------------------------------------------
+# GROUP DYNAMIC RENDER GRID (CONTINUED)
+# ----------------------------------------------------
+if not display_movies.empty:
+    columns_per_row = 4
+    for i in range(0, len(display_movies), columns_per_row):
+        row_slice = display_movies.iloc[i : i + columns_per_row]
+        cols = st.columns(columns_per_row)
         
-        for idx, (df_idx, row) in enumerate(row_slice.iterrows()):
+        for idx, (_, row) in enumerate(row_slice.iterrows()):
+            m_id = row["MovieID"]
+            
             with cols[idx]:
+                # 1. Base card markup design
                 st.markdown(f"""
                 <div class='movie-card'>
-                    <img class='movie-poster' src='{row['Poster']}'>
-                    <div class='movie-title'>{row['Title']}</div>
-                    <div class='movie-meta'>📅 {row['Year']}</div>
+                    <div>
+                        <img class='movie-poster' src='{row['Poster']}'>
+                        <div class='movie-title'>{row['Title']}</div>
+                        <div class='movie-meta'>📅 {row['Year']}</div>
+                    </div>
                 </div>
                 """, unsafe_allow_html=True)
                 
-                status_choices = ["Plan to Watch", "Watched"]
-                current_status_idx = status_choices.index(row["Status"]) if row["Status"] in status_choices else 0
+                # 2. UNIVERSAL STATUS SELECTBOX (Saves straight to 'Movies' sheet)
+                status_options = ["Plan to Watch", "Watched"]
+                global_status = row["Status"] if row["Status"] in status_options else "Plan to Watch"
+                s_idx = status_options.index(global_status)
                 
-                updated_status = st.selectbox("Status", status_choices, index=current_status_idx, key=f"status_select_{df_idx}")
+                new_status = st.selectbox("Group Movie Status", status_options, index=s_idx, key=f"status_{m_id}")
                 
-                if updated_status != row["Status"]:
-                    existing_data.at[df_idx, "Status"] = updated_status
-                    if updated_status == "Plan to Watch":
-                        existing_data.at[df_idx, "Rating"] = "Not Set"
-                    save_data(existing_data)
+                if new_status != row["Status"]:
+                    # Find matching exact target row inside global dataframe
+                    target_idx = movie_db[movie_db["MovieID"] == m_id].index
+                    movie_db.at[target_idx, "Status"] = new_status
+                    save_table("Movies", movie_db)
+                    st.rerun()
+                
+                # 3. CHOOSE PERSONAL REVIEW LOGIC (Runs only if movie is Watched)
+                if new_status == "Watched":
+                    st.markdown("---")
+                    st.caption("✍️ Your Review:")
+                    
+                    # Fetch active user's existing review criteria
+                    user_rev = review_db[(review_db["MovieID"] == m_id) & (review_db["Username"] == current_user)]
+                    current_rating = user_rev["Rating"].values[0] if not user_rev.empty else "⭐⭐⭐"
+                    current_comment = user_rev["Comment"].values[0] if not user_rev.empty else ""
+                    
+                    # Dropdown rating + clear comment submission box layout elements
+                    rating_options = ["⭐", "⭐⭐", "⭐⭐⭐", "⭐⭐⭐⭐", "⭐⭐⭐⭐⭐"]
+                    r_idx = rating_options.index(current_rating) if current_rating in rating_options else 2
+                    
+                    new_rating = st.selectbox("Your Rating", rating_options, index=r_idx, key=f"rating_{m_id}_{current_user}")
+                    new_comment = st.text_input("Comment/Notes", value=current_comment, key=f"comm_{m_id}_{current_user}")
+                    
+                    # Save personal edits instantly if form values deviate from DB state values
+                    if new_rating != current_rating or new_comment != current_comment:
+                        # Clear old row pairing
+                        review_db = review_db[~((review_db["MovieID"] == m_id) & (review_db["Username"] == current_user))]
+                        
+                        updated_review = pd.DataFrame([{
+                            "MovieID": m_id,
+                            "Username": current_user,
+                            "Rating": new_rating,
+                            "Comment": new_comment.strip()
+                        }])
+                        review_db = pd.concat([review_db, updated_review], ignore_index=True)
+                        save_table("Reviews", review_db)
+                        st.rerun()
+                
+                # 4. GROUP INSIGHTS PANEL: Render reviews left by friends
+                all_group_reviews = review_db[(review_db["MovieID"] == m_id)]
+                if not all_group_reviews.empty:
+                    st.markdown("**Group Discussion & Ratings:**")
+                    for _, rev in all_group_reviews.iterrows():
+                        comment_str = f" - *\"{rev['Comment']}\"*" if rev['Comment'] and str(rev['Comment']) != "nan" else ""
+                        st.markdown(f"<div class='review-box'>👤 **{rev['Username']}**: {rev['Rating']}{comment_str}</div>", unsafe_allow_html=True)
+                
+                st.write("") 
 else:
-    st.info("No movie items match the selected filter category.")
+    st.info("No items match this viewing state matrix filter criteria.")
