@@ -96,7 +96,7 @@ def add_item_dialog():
                         col_img, col_info = st.columns([1, 2])
                         
                         with col_img:
-                            poster_url = item["Poster"] if item["Poster"] != "N/A" else "https://ui-avatars.com"
+                            poster_url = item["Poster"] if item["Poster"] != "N/A" else "https://blocks.astratic.com/img/general-img-landscape.png"
                             st.image(poster_url, use_container_width=True)
                             
                         with col_info:
